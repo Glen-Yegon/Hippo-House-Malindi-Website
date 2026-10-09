@@ -1,55 +1,54 @@
 
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+import {
+  getFirestore,
+  doc,
+  collection,
+  getDoc,
+  getDocs
+} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
 /* =========================================
-   HIPPO HOUSE MALINDI
-   BOOKING PAGE JAVASCRIPT
+   HIPPO HOUSE MALINDI — BOOKING PAGE
 ========================================= */
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCygmzASKNJlctxV6ajGTyfd8aVnSTopSo",
+  authDomain: "hippohouse-f1bd5.firebaseapp.com",
+  projectId: "hippohouse-f1bd5",
+  storageBucket: "hippohouse-f1bd5.firebasestorage.app",
+  messagingSenderId: "738896662521",
+  appId: "1:738896662521:web:33c17b4d54fba626f73728"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/*
+  Keep this mapping identical to the homepage.
+
+  January, February, March, July and October
+  are provisionally assigned to mid season.
+*/
+const MONTH_SEASONS = {
+  1: "mid",
+  2: "mid",
+  3: "mid",
+  4: "mid",
+  5: "low",
+  6: "low",
+  7: "mid",
+  8: "high",
+  9: "low",
+  10: "mid",
+  11: "mid",
+  12: "high"
+};
 
 document.addEventListener("DOMContentLoaded", () => {
   "use strict";
 
-  /* =====================================
-     BOOKING CONFIGURATION
-  ===================================== */
-
-  const CONFIG = {
-    nightlyRate: 18000,
-    minimumNights: 2,
-    maximumGuests: 6,
-    currency: "KES"
-  };
-
-  /*
-    TEMPORARY UNAVAILABLE DATES
-
-    These are demonstration dates only.
-
-    Keep them synchronized with the homepage
-    calendar until we connect both calendars
-    to the same backend.
-
-    The backend will eventually control:
-    - Available dates
-    - Booked dates
-    - Nightly pricing
-    - Minimum stay
-    - Booking confirmations
-  */
-
-  const bookedDates = new Set([
-    "2026-10-15",
-    "2026-10-16",
-    "2026-10-17",
-    "2026-10-24",
-    "2026-10-25",
-    "2026-11-07",
-    "2026-11-08"
-  ]);
-
-  /* =====================================
-     ELEMENTS
-  ===================================== */
-
-  const $ = (selector) => document.querySelector(selector);
+  const $ = selector => document.querySelector(selector);
 
   const elements = {
     steps: [
@@ -57,39 +56,26 @@ document.addEventListener("DOMContentLoaded", () => {
       $("#step2"),
       $("#step3")
     ],
-
     progress: document.querySelectorAll(".booking-step"),
-
     calendarMonth: $("#calendarMonth"),
     calendarDays: $("#calendarDays"),
     prevMonth: $("#prevMonth"),
     nextMonth: $("#nextMonth"),
-
     selectedCheckin: $("#selectedCheckin"),
     selectedCheckout: $("#selectedCheckout"),
-
     guestCount: $("#guestCount"),
     stayMessage: $("#stayMessage"),
-
     continueDetails: $("#continueDetails"),
     backToStay: $("#backToStay"),
-
     guestForm: $("#guestDetailsForm"),
     detailsMessage: $("#detailsMessage"),
     backToDetails: $("#backToDetails"),
-
     editStay: $("#editStay"),
     editDetails: $("#editDetails"),
-
     submitBooking: $("#submitBooking"),
     submitMessage: $("#submitMessage"),
-
     summary: $("#bookingSummary")
   };
-
-  /* =====================================
-     STATE
-  ===================================== */
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -100,33 +86,30 @@ document.addEventListener("DOMContentLoaded", () => {
     1
   );
 
+  let pricing = null;
+  let bookedDates = new Set();
+  let dataReady = false;
+
   const booking = {
     checkin: null,
     checkout: null,
     guests: 2,
-
     fullName: "",
     email: "",
     phone: "",
     specialRequests: ""
   };
 
-  /* =====================================
+  /* =========================================
      DATE UTILITIES
-  ===================================== */
+  ========================================= */
 
   function dateKey(date) {
-    const year = date.getFullYear();
-
-    const month = String(
-      date.getMonth() + 1
-    ).padStart(2, "0");
-
-    const day = String(
-      date.getDate()
-    ).padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
+    return [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0")
+    ].join("-");
   }
 
   function parseDate(key) {
@@ -137,21 +120,10 @@ document.addEventListener("DOMContentLoaded", () => {
       return null;
     }
 
-    const [year, month, day] = key
-      .split("-")
-      .map(Number);
-
+    const [year, month, day] = key.split("-").map(Number);
     const date = new Date(year, month - 1, day);
 
-    if (
-      date.getFullYear() !== year ||
-      date.getMonth() !== month - 1 ||
-      date.getDate() !== day
-    ) {
-      return null;
-    }
-
-    return date;
+    return dateKey(date) === key ? date : null;
   }
 
   function formatDate(key, full = false) {
@@ -172,119 +144,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!a || !b) return 0;
 
-    const startUTC = Date.UTC(
-      a.getFullYear(),
-      a.getMonth(),
-      a.getDate()
-    );
-
-    const endUTC = Date.UTC(
-      b.getFullYear(),
-      b.getMonth(),
-      b.getDate()
-    );
-
-    return Math.round(
-      (endUTC - startUTC) / 86400000
-    );
+    return Math.round((
+      Date.UTC(b.getFullYear(), b.getMonth(), b.getDate()) -
+      Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())
+    ) / 86400000);
   }
 
-  function isBooked(key) {
-    return bookedDates.has(key);
-  }
-
-  function isPast(key) {
-    return key < dateKey(today);
-  }
-
-  function isUnavailable(key) {
-    return isPast(key) || isBooked(key);
-  }
-
-  /* =====================================
-     CHECK DATE RANGE
-  ===================================== */
-
-  function rangeIsAvailable(start, end) {
-    const first = parseDate(start);
+  function eachNight(start, end, callback) {
+    const cursor = parseDate(start);
     const last = parseDate(end);
 
-    if (!first || !last || last <= first) {
-      return false;
-    }
+    if (!cursor || !last || cursor >= last) return;
 
-    /*
-      Current rule:
-
-      Both check-in and check-out must be
-      available, and the selected range
-      cannot cross unavailable dates.
-
-      Same-day turnover rules can be
-      implemented with the backend later.
-    */
-
-    const cursor = new Date(first);
-
-    while (cursor <= last) {
-      if (isUnavailable(dateKey(cursor))) {
-        return false;
-      }
-
+    while (cursor < last) {
+      callback(dateKey(cursor));
       cursor.setDate(cursor.getDate() + 1);
     }
-
-    return true;
   }
 
-  function validStay() {
-    if (!booking.checkin || !booking.checkout) {
-      return false;
-    }
-
-    const nights = getNights(
-      booking.checkin,
-      booking.checkout
+  function inRange(key, start, end) {
+    return Boolean(
+      parseDate(start) &&
+      parseDate(end) &&
+      key >= start &&
+      key <= end
     );
-
-    return (
-      nights >= CONFIG.minimumNights &&
-      rangeIsAvailable(
-        booking.checkin,
-        booking.checkout
-      ) &&
-      booking.guests >= 1 &&
-      booking.guests <= CONFIG.maximumGuests
-    );
-  }
-
-  /* =====================================
-     PRICING
-  ===================================== */
-
-  function getTotal() {
-    if (!validStay()) return 0;
-
-    return getNights(
-      booking.checkin,
-      booking.checkout
-    ) * CONFIG.nightlyRate;
   }
 
   function money(amount) {
-    return `KSh ${new Intl.NumberFormat("en-KE", {
+    return "KSh " + Number(amount).toLocaleString("en-KE", {
       maximumFractionDigits: 0
-    }).format(amount)}`;
+    });
   }
 
-  /* =====================================
-     MESSAGES
-  ===================================== */
+  function setText(selector, value) {
+    const element = $(selector);
+    if (element) element.textContent = value;
+  }
 
   function showMessage(element, message) {
-    if (element) {
-      element.textContent = message;
-    }
+    if (element) element.textContent = message;
   }
 
   function clearMessages() {
@@ -292,16 +191,312 @@ document.addEventListener("DOMContentLoaded", () => {
       elements.stayMessage,
       elements.detailsMessage,
       elements.submitMessage
-    ].forEach((element) => {
-      if (element) {
-        element.textContent = "";
-      }
+    ].forEach(element => {
+      if (element) element.textContent = "";
     });
   }
 
-  /* =====================================
-     CALENDAR RENDERING
-  ===================================== */
+  /* =========================================
+     FIRESTORE
+  ========================================= */
+
+  function normalizePricing(data) {
+    if (!data?.rates) {
+      throw new Error("Pricing rates are missing.");
+    }
+
+    const rates = {};
+
+    for (const season of ["low", "mid", "high", "peak"]) {
+      rates[season] = Number(data.rates[season]);
+
+      if (
+        !Number.isFinite(rates[season]) ||
+        rates[season] <= 0
+      ) {
+        throw new Error(`Invalid ${season} season rate.`);
+      }
+    }
+
+    const result = {
+      ...data,
+      rates,
+      includedGuests: Number(data.includedGuests),
+      maximumGuests: Number(data.maximumGuests),
+      extraGuestRate: Number(data.extraGuestRate),
+      minimumNights: Number(data.minimumNights),
+      peakMinimumNights: Number(data.peakMinimumNights)
+    };
+
+    if (
+      !Number.isInteger(result.includedGuests) ||
+      result.includedGuests < 1 ||
+      !Number.isInteger(result.maximumGuests) ||
+      result.maximumGuests < result.includedGuests ||
+      !Number.isFinite(result.extraGuestRate) ||
+      result.extraGuestRate < 0 ||
+      !Number.isInteger(result.minimumNights) ||
+      result.minimumNights < 1 ||
+      !Number.isInteger(result.peakMinimumNights) ||
+      result.peakMinimumNights < 1
+    ) {
+      throw new Error("Invalid booking settings in Firestore.");
+    }
+
+    return result;
+  }
+
+  async function loadBookingData() {
+    const [
+      pricingSnapshot,
+      blockedSnapshot,
+      reservationsSnapshot
+    ] = await Promise.all([
+      getDoc(doc(db, "settings", "pricing")),
+      getDocs(collection(db, "blockedDates")),
+      getDocs(collection(db, "reservations"))
+    ]);
+
+    if (!pricingSnapshot.exists()) {
+      throw new Error("settings/pricing does not exist.");
+    }
+
+    const savedPricing = normalizePricing(
+      pricingSnapshot.data()
+    );
+
+    const unavailable = new Set();
+
+    blockedSnapshot.forEach(snapshot => {
+      const block = snapshot.data();
+
+      if (parseDate(snapshot.id)) {
+        unavailable.add(snapshot.id);
+      }
+
+      if (parseDate(block.date)) {
+        unavailable.add(block.date);
+      }
+
+      if (Array.isArray(block.dates)) {
+        block.dates.forEach(key => {
+          if (parseDate(key)) unavailable.add(key);
+        });
+      }
+
+      const start =
+        block.startDate || block.checkin || block.checkIn;
+
+      const end =
+        block.endDate || block.checkout || block.checkOut;
+
+      eachNight(start, end, key => unavailable.add(key));
+    });
+
+    reservationsSnapshot.forEach(snapshot => {
+      const reservation = snapshot.data();
+
+      const status = String(
+        reservation.status || ""
+      ).trim().toLowerCase();
+
+      if (status !== "confirmed") return;
+
+      const start =
+        reservation.checkin || reservation.checkIn;
+
+      const end =
+        reservation.checkout || reservation.checkOut;
+
+      eachNight(start, end, key => unavailable.add(key));
+    });
+
+    return {
+      pricing: savedPricing,
+      unavailable
+    };
+  }
+
+  /* =========================================
+     SEASONAL PRICING
+  ========================================= */
+
+  function getSeason(key) {
+    if (!pricing) return null;
+
+    const date = parseDate(key);
+    if (!date) return null;
+
+    if (inRange(key, pricing.peakStart, pricing.peakEnd)) {
+      return "peak";
+    }
+
+    if (inRange(key, pricing.easterStart, pricing.easterEnd)) {
+      return "high";
+    }
+
+    const month = date.getMonth() + 1;
+
+    return MONTH_SEASONS[month] || "mid";
+  }
+
+  function rangeIsAvailable(start, end) {
+    const first = parseDate(start);
+    const last = parseDate(end);
+
+    if (!first || !last || first < today || first >= last) {
+      return false;
+    }
+
+    let available = true;
+
+    // Checkout is exclusive: guests do not occupy
+    // the property on their checkout night.
+    eachNight(start, end, key => {
+      if (bookedDates.has(key)) available = false;
+    });
+
+    return available;
+  }
+
+  function calculateStay() {
+    if (!dataReady || !pricing) {
+      return {
+        valid: false,
+        error: "Rates and availability are loading."
+      };
+    }
+
+    const { checkin, checkout, guests } = booking;
+
+    if (!checkin || !checkout) {
+      return {
+        valid: false,
+        error: "Select check-in and checkout dates."
+      };
+    }
+
+    if (!rangeIsAvailable(checkin, checkout)) {
+      return {
+        valid: false,
+        error: "Your stay includes unavailable dates."
+      };
+    }
+
+    if (
+      !Number.isInteger(guests) ||
+      guests < 1 ||
+      guests > pricing.maximumGuests
+    ) {
+      return {
+        valid: false,
+        error: `Maximum ${pricing.maximumGuests} guests allowed.`
+      };
+    }
+
+    const nights = getNights(checkin, checkout);
+
+    let accommodation = 0;
+    let includesPeak = false;
+    let missingRate = false;
+
+    const breakdown = {
+      low: { nights: 0, total: 0 },
+      mid: { nights: 0, total: 0 },
+      high: { nights: 0, total: 0 },
+      peak: { nights: 0, total: 0 }
+    };
+
+    eachNight(checkin, checkout, key => {
+      const season = getSeason(key);
+      const rate = pricing.rates[season];
+
+      if (!Number.isFinite(rate) || rate <= 0) {
+        missingRate = true;
+        return;
+      }
+
+      accommodation += rate;
+      breakdown[season].nights++;
+      breakdown[season].total += rate;
+
+      if (season === "peak") includesPeak = true;
+    });
+
+    if (missingRate) {
+      return {
+        valid: false,
+        error: "A nightly rate is missing."
+      };
+    }
+
+    const extraGuests = Math.max(
+      0,
+      guests - pricing.includedGuests
+    );
+
+    const extraGuestTotal =
+      extraGuests * pricing.extraGuestRate * nights;
+
+    const total = accommodation + extraGuestTotal;
+
+    const minimumNights = includesPeak
+      ? pricing.peakMinimumNights
+      : pricing.minimumNights;
+
+    return {
+      valid: nights >= minimumNights,
+      priceAvailable: true,
+      nights,
+      accommodation,
+      extraGuests,
+      extraGuestTotal,
+      total,
+      breakdown,
+      minimumNights,
+      error: nights >= minimumNights
+        ? ""
+        : `A minimum stay of ${minimumNights} nights is required.`
+    };
+  }
+
+  function validStay() {
+    return calculateStay().valid;
+  }
+
+  /* =========================================
+     GUEST OPTIONS
+  ========================================= */
+
+  function buildGuestOptions() {
+    const select = elements.guestCount;
+
+    if (!select || !pricing) return;
+
+    select.replaceChildren();
+
+    for (let count = 1; count <= pricing.maximumGuests; count++) {
+      const option = document.createElement("option");
+
+      option.value = String(count);
+      option.textContent =
+        `${count} Guest${count === 1 ? "" : "s"}`;
+
+      select.appendChild(option);
+    }
+
+    booking.guests = Math.min(
+      Math.max(booking.guests, 1),
+      pricing.maximumGuests
+    );
+
+    select.value = String(booking.guests);
+    select.disabled = false;
+  }
+
+  /* =========================================
+     CALENDAR
+  ========================================= */
 
   function renderCalendar() {
     const year = displayedMonth.getFullYear();
@@ -313,46 +508,44 @@ document.addEventListener("DOMContentLoaded", () => {
         year: "numeric"
       });
 
-    elements.calendarDays.innerHTML = "";
+    elements.calendarDays.replaceChildren();
 
     const firstDay = new Date(year, month, 1);
-
-    const daysInMonth = new Date(
-      year,
-      month + 1,
-      0
-    ).getDate();
-
-    // Monday-first calendar.
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
     const offset = (firstDay.getDay() + 6) % 7;
 
-    // Empty cells before the first day.
     for (let i = 0; i < offset; i++) {
       const empty = document.createElement("span");
-
       empty.className = "calendar-day-empty";
       empty.setAttribute("aria-hidden", "true");
-
       elements.calendarDays.appendChild(empty);
     }
 
-    // Generate all dates.
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day);
       const key = dateKey(date);
 
-      const past = isPast(key);
-      const booked = isBooked(key);
+      const past = date < today;
+      const booked = bookedDates.has(key);
 
       const selected =
         key === booking.checkin ||
         key === booking.checkout;
 
-      const inRange =
+      const inSelectedRange = Boolean(
         booking.checkin &&
         booking.checkout &&
         key > booking.checkin &&
-        key < booking.checkout;
+        key < booking.checkout
+      );
+
+      const checkoutOnly = Boolean(
+        booked &&
+        booking.checkin &&
+        !booking.checkout &&
+        key > booking.checkin &&
+        rangeIsAvailable(booking.checkin, key)
+      );
 
       const button = document.createElement("button");
 
@@ -360,118 +553,83 @@ document.addEventListener("DOMContentLoaded", () => {
       button.className = "calendar-day";
       button.textContent = String(day);
 
-      if (past) {
-        button.classList.add("is-past");
-      } else if (booked) {
-        button.classList.add("is-booked");
-      } else if (selected) {
+      if (past) button.classList.add("is-past");
+      if (booked) button.classList.add("is-booked");
+
+      if (selected) {
         button.classList.add("is-selected");
-      } else if (inRange) {
+      } else if (inSelectedRange) {
         button.classList.add("is-range");
+      } else if (checkoutOnly) {
+        button.classList.add("is-checkout-only");
       }
 
-      // Prevent selecting unavailable dates.
-      button.disabled = past || booked;
+      button.disabled =
+        !dataReady ||
+        past ||
+        (booked && !checkoutOnly);
 
-      const dateDescription = date.toLocaleDateString(
-        "en-GB",
-        {
-          weekday: "long",
-          day: "numeric",
-          month: "long",
-          year: "numeric"
-        }
-      );
-
-      let status = "Available";
-
-      if (past) {
-        status = "Past date";
-      } else if (booked) {
-        status = "Unavailable";
-      } else if (key === booking.checkin) {
-        status = "Selected check-in";
-      } else if (key === booking.checkout) {
-        status = "Selected check-out";
-      } else if (inRange) {
-        status = "Within selected stay";
-      }
+      const label = date.toLocaleDateString("en-GB", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      });
 
       button.setAttribute(
         "aria-label",
-        `${dateDescription}. ${status}`
+        `${label}. ${booked ? "Unavailable night" : "Available"}`
       );
 
       if (selected) {
         button.setAttribute("aria-pressed", "true");
       }
 
-      button.addEventListener("click", () => {
-        selectDate(key);
-      });
+      button.addEventListener("click", () => selectDate(key));
 
       elements.calendarDays.appendChild(button);
     }
 
-    // Disable previous month when viewing current month.
-    const firstCurrentMonth = new Date(
+    const currentMonth = new Date(
       today.getFullYear(),
       today.getMonth(),
       1
     );
 
     elements.prevMonth.disabled =
-      displayedMonth <= firstCurrentMonth;
+      displayedMonth <= currentMonth;
   }
 
-  /* =====================================
-     DATE SELECTION
-  ===================================== */
-
   function selectDate(key) {
-    if (isUnavailable(key)) return;
+    if (!dataReady) return;
+
+    const date = parseDate(key);
+
+    if (!date || date < today) return;
 
     clearMessages();
-
-    /*
-      First click: check-in.
-      Second click: check-out.
-
-      After a completed selection,
-      clicking another date starts over.
-
-      Clicking an earlier date also
-      starts a new selection.
-    */
 
     if (
       !booking.checkin ||
       booking.checkout ||
       key <= booking.checkin
     ) {
-      booking.checkin = key;
-      booking.checkout = null;
-    } else {
-      const nights = getNights(
-        booking.checkin,
-        key
-      );
-
-      if (nights < CONFIG.minimumNights) {
+      if (bookedDates.has(key)) {
         showMessage(
           elements.stayMessage,
-          `A minimum stay of ${CONFIG.minimumNights} nights is required.`
+          "This date is unavailable for check-in."
         );
-
         return;
       }
 
+      booking.checkin = key;
+      booking.checkout = null;
+    } else {
       if (!rangeIsAvailable(booking.checkin, key)) {
         showMessage(
           elements.stayMessage,
-          "Your selected stay includes unavailable dates. Please choose another range."
+          "Your selected stay includes unavailable nights."
         );
-
         return;
       }
 
@@ -481,36 +639,92 @@ document.addEventListener("DOMContentLoaded", () => {
     updateBookingUI();
   }
 
-  /* =====================================
-     UPDATE BOOKING SUMMARY
-  ===================================== */
+  /* =========================================
+     LIVE PRICE BREAKDOWN
+  ========================================= */
 
-  function setText(selector, value) {
-    const element = $(selector);
+  function renderPriceBreakdown(result) {
+    let container = $("#bookingPriceBreakdown");
 
-    if (element) {
-      element.textContent = value;
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "bookingPriceBreakdown";
+      container.className = "booking-price-breakdown";
+
+      const total = $("#summaryTotal");
+
+      if (total) {
+        const totalRow = total.closest(".summary-total");
+
+        if (totalRow) {
+          totalRow.parentElement.insertBefore(
+            container,
+            totalRow
+          );
+        } else {
+          total.parentElement?.appendChild(container);
+        }
+      }
+    }
+
+    container.replaceChildren();
+    container.hidden = !result.priceAvailable;
+
+    if (!result.priceAvailable) return;
+
+    const labels = {
+      low: "Low season",
+      mid: "Mid season",
+      high: "High season",
+      peak: "Peak season"
+    };
+
+    function addRow(labelText, valueText) {
+      const row = document.createElement("div");
+      row.className = "summary-row";
+
+      const label = document.createElement("span");
+      const value = document.createElement("strong");
+
+      label.textContent = labelText;
+      value.textContent = valueText;
+
+      row.append(label, value);
+      container.appendChild(row);
+    }
+
+    for (const season of ["low", "mid", "high", "peak"]) {
+      const item = result.breakdown[season];
+
+      if (!item.nights) continue;
+
+      addRow(
+        `${labels[season]} (${item.nights} × ${money(pricing.rates[season])})`,
+        money(item.total)
+      );
+    }
+
+    if (result.extraGuests > 0) {
+      addRow(
+        `Extra guests (${result.extraGuests} × ${result.nights} nights × ${money(pricing.extraGuestRate)})`,
+        money(result.extraGuestTotal)
+      );
     }
   }
 
+  /* =========================================
+     UPDATE BOOKING UI
+  ========================================= */
+
   function updateBookingUI() {
-    const nights = validStay()
-      ? getNights(
-          booking.checkin,
-          booking.checkout
-        )
-      : 0;
+    const result = calculateStay();
 
-    const total = getTotal();
-
-    // Selected dates beneath calendar.
     elements.selectedCheckin.textContent =
       formatDate(booking.checkin);
 
     elements.selectedCheckout.textContent =
       formatDate(booking.checkout);
 
-    // Sidebar summary.
     setText(
       "#summaryCheckin",
       booking.checkin
@@ -530,10 +744,9 @@ document.addEventListener("DOMContentLoaded", () => {
       `${booking.guests} guest${booking.guests === 1 ? "" : "s"}`
     );
 
-    setText(
-      "#summaryRate",
-      money(CONFIG.nightlyRate)
-    );
+    const nights = booking.checkin && booking.checkout
+      ? getNights(booking.checkin, booking.checkout)
+      : 0;
 
     setText(
       "#summaryDuration",
@@ -542,43 +755,66 @@ document.addEventListener("DOMContentLoaded", () => {
         : "—"
     );
 
+    // A mixed-season stay does not have one nightly rate.
+    const activeRates = result.priceAvailable
+      ? ["low", "mid", "high", "peak"]
+          .filter(season => result.breakdown[season].nights > 0)
+          .map(season => pricing.rates[season])
+      : [];
+
+    const uniqueRates = [...new Set(activeRates)];
+
+    setText(
+      "#summaryRate",
+      uniqueRates.length === 1
+        ? money(uniqueRates[0])
+        : uniqueRates.length > 1
+          ? "Varies by season"
+          : "—"
+    );
+
     setText(
       "#summaryTotal",
-      money(total)
+      result.priceAvailable ? money(result.total) : "—"
     );
+
+    renderPriceBreakdown(result);
+
+    if (elements.continueDetails) {
+      elements.continueDetails.disabled = !result.valid;
+    }
+
+    if (booking.checkin && booking.checkout) {
+      showMessage(
+        elements.stayMessage,
+        result.error || ""
+      );
+    }
 
     renderCalendar();
   }
 
-  /* =====================================
+  /* =========================================
      STEP NAVIGATION
-  ===================================== */
+  ========================================= */
 
   function goToStep(step) {
     elements.steps.forEach((panel, index) => {
-      panel.hidden = index + 1 !== step;
+      if (panel) panel.hidden = index + 1 !== step;
     });
 
-    elements.summary.hidden = false;
+    if (elements.summary) {
+      elements.summary.hidden = false;
+    }
 
     elements.progress.forEach((item, index) => {
       const number = index + 1;
 
-      item.classList.toggle(
-        "is-active",
-        number === step
-      );
-
-      item.classList.toggle(
-        "is-complete",
-        number < step
-      );
+      item.classList.toggle("is-active", number === step);
+      item.classList.toggle("is-complete", number < step);
 
       if (number === step) {
-        item.setAttribute(
-          "aria-current",
-          "step"
-        );
+        item.setAttribute("aria-current", "step");
       } else {
         item.removeAttribute("aria-current");
       }
@@ -592,64 +828,32 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  /* =====================================
-     STEP 1 — CONTINUE TO DETAILS
-  ===================================== */
+  /* =========================================
+     STEP 1
+  ========================================= */
 
-  elements.continueDetails.addEventListener(
-    "click",
-    () => {
-      clearMessages();
+  elements.continueDetails.addEventListener("click", () => {
+    clearMessages();
 
-      if (!booking.checkin) {
-        showMessage(
-          elements.stayMessage,
-          "Please select your check-in date."
-        );
+    const result = calculateStay();
 
-        return;
-      }
-
-      if (!booking.checkout) {
-        showMessage(
-          elements.stayMessage,
-          "Please select your check-out date."
-        );
-
-        return;
-      }
-
-      if (!validStay()) {
-        showMessage(
-          elements.stayMessage,
-          "Please select a valid stay using available dates."
-        );
-
-        return;
-      }
-
-      goToStep(2);
+    if (!result.valid) {
+      showMessage(elements.stayMessage, result.error);
+      return;
     }
-  );
 
-  /* =====================================
-     GUEST COUNT
-  ===================================== */
+    goToStep(2);
+  });
 
-  elements.guestCount.addEventListener(
-    "change",
-    () => {
-      booking.guests = Number(
-        elements.guestCount.value
-      );
+  elements.guestCount.addEventListener("change", () => {
+    booking.guests = Number(elements.guestCount.value);
+    clearMessages();
+    updateBookingUI();
+  });
 
-      updateBookingUI();
-    }
-  );
-
-  /* =====================================
+  /* =========================================
      STEP 2 — GUEST DETAILS
-  ===================================== */
+  ========================================= */
 
   function collectGuestDetails() {
     const form = elements.guestForm;
@@ -668,7 +872,6 @@ document.addEventListener("DOMContentLoaded", () => {
         elements.detailsMessage,
         "Please complete all required fields."
       );
-
       return false;
     }
 
@@ -679,52 +882,43 @@ document.addEventListener("DOMContentLoaded", () => {
       );
 
       $("#phoneNumber").focus();
-
       return false;
     }
 
     booking.fullName = name;
     booking.email = email;
     booking.phone = phone;
-
     booking.specialRequests =
       $("#specialRequests").value.trim();
 
     return true;
   }
 
-  elements.guestForm.addEventListener(
-    "submit",
-    (event) => {
-      event.preventDefault();
+  elements.guestForm.addEventListener("submit", event => {
+    event.preventDefault();
+    clearMessages();
 
-      clearMessages();
+    const result = calculateStay();
 
-      if (!validStay()) {
-        goToStep(1);
-
-        showMessage(
-          elements.stayMessage,
-          "Please review your stay dates."
-        );
-
-        return;
-      }
-
-      if (!collectGuestDetails()) {
-        return;
-      }
-
-      updateReview();
-      goToStep(3);
+    if (!result.valid) {
+      goToStep(1);
+      showMessage(elements.stayMessage, result.error);
+      return;
     }
-  );
 
-  /* =====================================
-     STEP 3 — REVIEW & PAY
-  ===================================== */
+    if (!collectGuestDetails()) return;
+
+    updateReview();
+    goToStep(3);
+  });
+
+  /* =========================================
+     STEP 3 — REVIEW
+  ========================================= */
 
   function updateReview() {
+    const result = calculateStay();
+
     setText(
       "#reviewCheckin",
       formatDate(booking.checkin, true)
@@ -740,30 +934,10 @@ document.addEventListener("DOMContentLoaded", () => {
       `${booking.guests} guest${booking.guests === 1 ? "" : "s"}`
     );
 
-    setText(
-      "#reviewNights",
-      String(
-        getNights(
-          booking.checkin,
-          booking.checkout
-        )
-      )
-    );
-
-    setText(
-      "#reviewName",
-      booking.fullName
-    );
-
-    setText(
-      "#reviewEmail",
-      booking.email
-    );
-
-    setText(
-      "#reviewPhone",
-      booking.phone
-    );
+    setText("#reviewNights", String(result.nights || 0));
+    setText("#reviewName", booking.fullName);
+    setText("#reviewEmail", booking.email);
+    setText("#reviewPhone", booking.phone);
 
     setText(
       "#reviewRequests",
@@ -772,162 +946,116 @@ document.addEventListener("DOMContentLoaded", () => {
 
     setText(
       "#reviewTotal",
-      money(getTotal())
+      result.priceAvailable ? money(result.total) : "—"
     );
   }
 
-  /* =====================================
-     BACK & EDIT BUTTONS
-  ===================================== */
+  /* =========================================
+     BACK AND EDIT
+  ========================================= */
 
-  elements.backToStay.addEventListener(
-    "click",
-    () => {
-      clearMessages();
+  elements.backToStay?.addEventListener("click", () => {
+    clearMessages();
+    goToStep(1);
+  });
+
+  elements.backToDetails?.addEventListener("click", () => {
+    clearMessages();
+    goToStep(2);
+  });
+
+  elements.editStay?.addEventListener("click", () => {
+    clearMessages();
+    goToStep(1);
+  });
+
+  elements.editDetails?.addEventListener("click", () => {
+    clearMessages();
+    goToStep(2);
+  });
+
+  /* =========================================
+     PAYMENT PLACEHOLDER
+  ========================================= */
+
+  elements.submitBooking?.addEventListener("click", () => {
+    clearMessages();
+
+    const result = calculateStay();
+
+    if (!result.valid) {
       goToStep(1);
+      showMessage(elements.stayMessage, result.error);
+      return;
     }
-  );
 
-  elements.backToDetails.addEventListener(
-    "click",
-    () => {
-      clearMessages();
+    if (!collectGuestDetails()) {
       goToStep(2);
+      return;
     }
-  );
 
-  elements.editStay.addEventListener(
-    "click",
-    () => {
-      clearMessages();
-      goToStep(1);
-    }
-  );
+    updateReview();
 
-  elements.editDetails.addEventListener(
-    "click",
-    () => {
-      clearMessages();
-      goToStep(2);
-    }
-  );
+    /*
+      Future payment integration:
 
-  /* =====================================
-     PAY NOW — PAYSTACK PLACEHOLDER
-  ===================================== */
+      Send checkin, checkout, guests and guest
+      information to a secure backend.
 
-  elements.submitBooking.addEventListener(
-    "click",
-    () => {
-      clearMessages();
+      The backend must independently:
+      - Check current availability
+      - Recalculate rates from Firestore
+      - Create a temporary booking hold
+      - Initialize payment
+      - Verify payment
+      - Confirm the reservation
 
-      // Validate stay again before payment.
-      if (!validStay()) {
-        goToStep(1);
+      Never trust a browser-calculated total
+      when collecting payment.
+    */
 
-        showMessage(
-          elements.stayMessage,
-          "Please review your selected dates before proceeding."
-        );
+    showMessage(
+      elements.submitMessage,
+      "Online payments are not yet enabled. No payment has been taken and your reservation has not been confirmed."
+    );
+  });
 
-        return;
-      }
+  /* =========================================
+     MONTH NAVIGATION
+  ========================================= */
 
-      // Validate guest information.
-      if (!collectGuestDetails()) {
-        goToStep(2);
-        return;
-      }
+  elements.prevMonth.addEventListener("click", () => {
+    const previous = new Date(
+      displayedMonth.getFullYear(),
+      displayedMonth.getMonth() - 1,
+      1
+    );
 
-      // Update final reservation review.
-      updateReview();
+    const currentMonth = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      1
+    );
 
-      /*
-        PAYSTACK INTEGRATION WILL GO HERE.
+    if (previous < currentMonth) return;
 
-        FUTURE PAYMENT FLOW:
+    displayedMonth = previous;
+    renderCalendar();
+  });
 
-        1. Send reservation details to backend.
+  elements.nextMonth.addEventListener("click", () => {
+    displayedMonth = new Date(
+      displayedMonth.getFullYear(),
+      displayedMonth.getMonth() + 1,
+      1
+    );
 
-        2. Backend verifies availability
-           and calculates the correct amount.
+    renderCalendar();
+  });
 
-        3. Backend creates a temporary
-           reservation hold.
-
-        4. Backend initializes Paystack.
-
-        5. Guest completes payment through
-           Paystack checkout.
-
-        6. Backend verifies payment using
-           Paystack's API/webhook.
-
-        7. Backend confirms the reservation.
-
-        8. Confirmed dates become unavailable
-           on both booking calendars.
-
-        9. Confirmation emails are sent
-           to the guest and property owner.
-
-        IMPORTANT:
-        Never confirm a booking based only
-        on frontend payment callbacks.
-      */
-
-      showMessage(
-        elements.submitMessage,
-        "Online payments are not yet enabled. No payment has been taken and your reservation has not been confirmed."
-      );
-    }
-  );
-
-  /* =====================================
-     CALENDAR NAVIGATION
-  ===================================== */
-
-  elements.prevMonth.addEventListener(
-    "click",
-    () => {
-      const previous = new Date(
-        displayedMonth.getFullYear(),
-        displayedMonth.getMonth() - 1,
-        1
-      );
-
-      const currentMonth = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        1
-      );
-
-      if (previous < currentMonth) {
-        return;
-      }
-
-      displayedMonth = previous;
-
-      renderCalendar();
-    }
-  );
-
-  elements.nextMonth.addEventListener(
-    "click",
-    () => {
-      displayedMonth = new Date(
-        displayedMonth.getFullYear(),
-        displayedMonth.getMonth() + 1,
-        1
-      );
-
-      renderCalendar();
-    }
-  );
-
-  /* =====================================
-     HOMEPAGE DATE PRESELECTION
-  ===================================== */
+  /* =========================================
+     HOMEPAGE SELECTION
+  ========================================= */
 
   function loadDatesFromURL() {
     const params = new URLSearchParams(
@@ -936,10 +1064,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const checkin = params.get("checkin");
     const checkout = params.get("checkout");
+    const guestsParam = params.get("guests");
 
-    if (!checkin || !checkout) {
-      return;
+    if (guestsParam !== null) {
+      const count = Number(guestsParam);
+
+      if (
+        Number.isInteger(count) &&
+        count >= 1 &&
+        count <= pricing.maximumGuests
+      ) {
+        booking.guests = count;
+      }
     }
+
+    elements.guestCount.value = String(booking.guests);
+
+    if (!checkin || !checkout) return;
 
     const start = parseDate(checkin);
     const end = parseDate(checkout);
@@ -947,54 +1088,94 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!start || !end) {
       showMessage(
         elements.stayMessage,
-        "Please select valid check-in and check-out dates."
+        "The dates received from the homepage are invalid."
       );
-
       return;
     }
-
-    const nights = getNights(
-      checkin,
-      checkout
-    );
-
-    if (
-      nights < CONFIG.minimumNights ||
-      !rangeIsAvailable(checkin, checkout)
-    ) {
-      showMessage(
-        elements.stayMessage,
-        "The dates from your previous selection are unavailable or do not meet the minimum stay. Please choose new dates."
-      );
-
-      return;
-    }
-
-    booking.checkin = checkin;
-    booking.checkout = checkout;
 
     displayedMonth = new Date(
       start.getFullYear(),
       start.getMonth(),
       1
     );
+
+    booking.checkin = checkin;
+    booking.checkout = checkout;
+
+    const result = calculateStay();
+
+    if (!result.valid) {
+      booking.checkin = null;
+      booking.checkout = null;
+
+      showMessage(
+        elements.stayMessage,
+        `Your previous selection could not be restored: ${result.error}`
+      );
+    }
   }
 
-  /* =====================================
+  /* =========================================
      INITIALIZE
-  ===================================== */
+  ========================================= */
 
-  function initialize() {
-    booking.guests = Number(
-      elements.guestCount.value
+  async function initialize() {
+    elements.guestCount.disabled = true;
+    elements.continueDetails.disabled = true;
+
+    showMessage(
+      elements.stayMessage,
+      "Loading live rates and availability..."
     );
 
-    loadDatesFromURL();
-
-    updateBookingUI();
+    renderCalendar();
     goToStep(1);
+
+    try {
+      const data = await loadBookingData();
+
+      pricing = data.pricing;
+      bookedDates = data.unavailable;
+      dataReady = true;
+
+      buildGuestOptions();
+      loadDatesFromURL();
+
+      const initialMessage = elements.stayMessage.textContent;
+
+      updateBookingUI();
+
+      if (
+        initialMessage.startsWith(
+          "Your previous selection could not"
+        ) ||
+        initialMessage.startsWith(
+          "The dates received"
+        )
+      ) {
+        showMessage(elements.stayMessage, initialMessage);
+      } else if (!booking.checkin) {
+        showMessage(elements.stayMessage, "");
+      }
+
+      console.info("Live pricing loaded:", pricing);
+      console.info("Unavailable nights:", [...bookedDates]);
+
+    } catch (error) {
+      console.error("Booking initialization failed:", error);
+
+      dataReady = false;
+      elements.guestCount.disabled = true;
+      elements.continueDetails.disabled = true;
+
+      renderCalendar();
+
+      showMessage(
+        elements.stayMessage,
+        "Live booking information is unavailable. Please try again later."
+      );
+    }
   }
 
   initialize();
-
 });

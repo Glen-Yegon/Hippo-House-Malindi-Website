@@ -1192,3 +1192,80 @@ textarea:focus-visible {
     width: 100%;
   }
 }
+
+/* LIVE PRICING BREAKDOWN */
+
+.booking-price-breakdown {
+  padding: 12px 0;
+  margin: 12px 0;
+  border-top: 1px solid var(--border);
+}
+
+.booking-price-breakdown .summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+  margin: 12px 0;
+}
+
+.booking-price-breakdown .summary-row span {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.booking-price-breakdown .summary-row strong {
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* BOOKED DATES */
+
+.calendar-day.is-booked,
+.calendar-day.is-booked:disabled {
+  background: #b83a3a;
+  color: #fff;
+  opacity: 1;
+}
+
+/* SELECTED DATES */
+
+.calendar-day.is-selected,
+.calendar-day.is-selected:disabled {
+  background: var(--green);
+  color: #fff;
+  opacity: 1;
+}
+
+/* CHECKOUT ON A BOOKED DATE */
+
+.calendar-day.is-checkout-only {
+  background: #f1ead9;
+  color: #776135;
+  cursor: pointer;
+}
+
+/* DISABLED CONTINUE BUTTON */
+
+.primary-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .booking-price-breakdown .summary-row {
+    gap: 10px;
+  }
+
+  .booking-price-breakdown .summary-row span {
+    font-size: 10px;
+  }
+
+  .booking-price-breakdown .summary-row strong {
+    font-size: 11px;
+  }
+}

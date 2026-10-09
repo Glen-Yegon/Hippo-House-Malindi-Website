@@ -1572,3 +1572,42 @@ a {
     transition-duration: .01ms !important;
   }
 }
+
+
+
+/* SEASONAL PRICING IMPROVEMENTS */
+
+#page-pricing .stack-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+#page-pricing .sidebar-divider {
+  margin: 14px 0;
+}
+
+#page-pricing .form-field small {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+#page-pricing .price-preview {
+  overflow-wrap: anywhere;
+}
+
+#page-pricing .info-row strong {
+  text-align: right;
+}
+
+@media (max-width: 600px) {
+  #page-pricing .panel {
+    padding: 22px 18px;
+  }
+
+  #page-pricing .price-preview {
+    font-size: clamp(22px, 6vw, 32px);
+  }
+}

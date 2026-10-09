@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="styles/admin.css">
-  <script src="scripts/admin.js" defer></script>
+  <script type="module" src="scripts/admin.js" defer></script>
 </head>
 <body>
 
@@ -435,73 +435,206 @@
       <!-- =====================================
            PRICING
       ====================================== -->
-      <section class="page-section" id="page-pricing" hidden>
-        <div class="page-heading">
-          <div>
-            <span class="eyebrow">RATE MANAGEMENT</span>
-            <h1>Pricing<span class="gold-period">.</span></h1>
-            <p>Configure nightly rates and minimum stay requirements.</p>
-          </div>
+      
+<section class="page-section" id="page-pricing" hidden>
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">RATE MANAGEMENT</span>
+      <h1>Pricing<span class="gold-period">.</span></h1>
+      <p>Manage seasonal rates, occupancy and booking rules.</p>
+    </div>
+  </div>
+
+  <div class="settings-layout">
+    <article class="panel">
+      <div class="panel-heading">
+        <div>
+          <span class="eyebrow">SEASONAL PRICING</span>
+          <h2>Nightly rates</h2>
+        </div>
+      </div>
+
+      <form id="pricingForm" class="stack-form">
+        <div class="form-field">
+          <label for="rateLow">LOW SEASON — KES / NIGHT</label>
+          <input id="rateLow" type="number" min="1" step="1" required>
+          <small>May, June and September</small>
         </div>
 
-        <div class="settings-layout">
-          <article class="panel">
-            <div class="panel-heading">
-              <div>
-                <span class="eyebrow">STANDARD RATE</span>
-                <h2>Booking rates</h2>
-              </div>
-            </div>
-
-            <form id="pricingForm" class="stack-form">
-              <div class="form-field">
-                <label for="nightlyRate">NIGHTLY RATE (KES)</label>
-                <input id="nightlyRate" type="number" min="1"
-                  step="1" value="18000" required>
-                <small>Base nightly price for the entire property.</small>
-              </div>
-
-              <div class="form-field">
-                <label for="minimumNights">MINIMUM STAY (NIGHTS)</label>
-                <input id="minimumNights" type="number" min="1"
-                  max="365" value="2" required>
-              </div>
-
-              <div class="form-field">
-                <label for="maximumGuests">MAXIMUM GUESTS</label>
-                <input id="maximumGuests" type="number" min="1"
-                  max="100" value="6" required>
-              </div>
-
-              <button class="btn btn-dark" type="submit">
-                Save preview settings
-              </button>
-              <p class="form-feedback" id="pricingFeedback" role="status"></p>
-            </form>
-          </article>
-
-          <article class="panel">
-            <span class="eyebrow">RATE PREVIEW</span>
-            <h2>Current configuration</h2>
-            <div class="price-preview" id="pricePreview">KSh 18,000
-              <span>/ night</span>
-            </div>
-            <div class="sidebar-divider"></div>
-            <div class="info-row"><span>Minimum stay</span>
-              <strong id="minimumPreview">2 nights</strong></div>
-            <div class="info-row"><span>Guest capacity</span>
-              <strong id="guestsPreview">6 guests</strong></div>
-            <div class="info-row"><span>Live website synchronization</span>
-              <strong>—</strong></div>
-
-            <div class="note-box">
-              These settings are for this preview only. The public
-              booking page still uses its own configuration until
-              we connect the shared database.
-            </div>
-          </article>
+        <div class="form-field">
+          <label for="rateMid">MID SEASON — KES / NIGHT</label>
+          <input id="rateMid" type="number" min="1" step="1" required>
+          <small>April and November</small>
         </div>
-      </section>
+
+        <div class="form-field">
+          <label for="rateHigh">HIGH SEASON — KES / NIGHT</label>
+          <input id="rateHigh" type="number" min="1" step="1" required>
+          <small>Easter, August and December 1–19</small>
+        </div>
+
+        <div class="form-field">
+          <label for="ratePeak">PEAK SEASON — KES / NIGHT</label>
+          <input id="ratePeak" type="number" min="1" step="1" required>
+          <small>Christmas and New Year</small>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <span class="eyebrow">GUEST CAPACITY</span>
+        <h2>Occupancy rules</h2>
+
+        <div class="form-field">
+          <label for="includedGuests">GUESTS INCLUDED IN BASE RATE</label>
+          <input id="includedGuests" type="number" min="1" max="100" required>
+        </div>
+
+        <div class="form-field">
+          <label for="maximumGuests">MAXIMUM GUESTS</label>
+          <input id="maximumGuests" type="number" min="1" max="100" required>
+        </div>
+
+        <div class="form-field">
+          <label for="extraGuestRate">ADDITIONAL GUEST — KES / PERSON / NIGHT</label>
+          <input id="extraGuestRate" type="number" min="0" step="1" required>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <span class="eyebrow">BOOKING REQUIREMENTS</span>
+        <h2>Minimum stays</h2>
+
+        <div class="form-field">
+          <label for="minimumNights">STANDARD MINIMUM NIGHTS</label>
+          <input id="minimumNights" type="number" min="1" max="365" required>
+        </div>
+
+        <div class="form-field">
+          <label for="peakMinimumNights">PEAK SEASON MINIMUM NIGHTS</label>
+          <input id="peakMinimumNights" type="number" min="1" max="365" required>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <span class="eyebrow">SPECIAL DATE RANGES</span>
+        <h2>Holiday dates</h2>
+
+        <p class="muted">
+          Set the exact Easter and Christmas/New Year dates.
+          Both start and end dates are inclusive.
+        </p>
+
+        <div class="form-field">
+          <label for="easterStart">EASTER START</label>
+          <input id="easterStart" type="date">
+        </div>
+
+        <div class="form-field">
+          <label for="easterEnd">EASTER END</label>
+          <input id="easterEnd" type="date">
+        </div>
+
+        <div class="form-field">
+          <label for="peakStart">CHRISTMAS / NEW YEAR START</label>
+          <input id="peakStart" type="date">
+        </div>
+
+        <div class="form-field">
+          <label for="peakEnd">CHRISTMAS / NEW YEAR END</label>
+          <input id="peakEnd" type="date">
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="form-field">
+          <label for="fallbackRate">OTHER DATES — KES / NIGHT</label>
+          <input id="fallbackRate" type="number" min="0" step="1" required>
+          <small>
+            Enter 0 until the owner confirms rates for
+            months not covered by the supplied pricing.
+            Those dates will remain unpriced.
+          </small>
+        </div>
+
+        <button class="btn btn-dark" type="submit">
+          Save pricing changes
+        </button>
+
+        <p class="form-feedback" id="pricingFeedback" role="status"></p>
+      </form>
+    </article>
+
+    <article class="panel">
+      <span class="eyebrow">RATE PREVIEW</span>
+      <h2>Current configuration</h2>
+
+      <div class="price-preview" id="pricePreview"></div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="info-row">
+        <span>Low season</span>
+        <strong id="previewLow"></strong>
+      </div>
+
+      <div class="info-row">
+        <span>Mid season</span>
+        <strong id="previewMid"></strong>
+      </div>
+
+      <div class="info-row">
+        <span>High season</span>
+        <strong id="previewHigh"></strong>
+      </div>
+
+      <div class="info-row">
+        <span>Peak season</span>
+        <strong id="previewPeak"></strong>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="info-row">
+        <span>Base occupancy</span>
+        <strong id="includedPreview"></strong>
+      </div>
+
+      <div class="info-row">
+        <span>Maximum occupancy</span>
+        <strong id="guestsPreview"></strong>
+      </div>
+
+      <div class="info-row">
+        <span>Extra guest / night</span>
+        <strong id="extraGuestPreview"></strong>
+      </div>
+
+      <div class="info-row">
+        <span>Standard minimum</span>
+        <strong id="minimumPreview"></strong>
+      </div>
+
+      <div class="info-row">
+        <span>Peak minimum</span>
+        <strong id="peakMinimumPreview"></strong>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="info-row">
+        <span>Live website synchronization</span>
+        <strong>Not connected</strong>
+      </div>
+
+      <div class="note-box">
+        Pricing changes are saved in this browser for now.
+        They will not affect the public booking website until
+        the shared database is connected.
+      </div>
+    </article>
+  </div>
+</section>
+
 
       <!-- =====================================
            SETTINGS

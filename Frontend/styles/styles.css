@@ -3754,3 +3754,261 @@ padding:
   }
 
 }
+
+
+/* =========================================
+   HIPPO HOUSE — DYNAMIC SEASONAL PRICING
+========================================= */
+
+.season-price {
+  display: block;
+  margin-top: 13px;
+  color: var(--green);
+  font-family: var(--font-heading);
+  font-size: clamp(27px, 3vw, 38px);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+
+.pricing-guest-note {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(9, 41, 30, 0.16);
+}
+
+.pricing-guest-note span {
+  color: rgba(9, 41, 30, 0.7);
+  font-size: 11px;
+  line-height: 1.8;
+}
+
+.pricing-data-status {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #9b6038;
+}
+
+/* =========================================
+   AVAILABILITY — GUEST SELECTION
+========================================= */
+
+.availability-guest-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 0;
+  border-top: 1px solid rgba(9, 41, 30, 0.12);
+}
+
+.availability-field-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  color: var(--green);
+}
+
+.availability-guest-selector p {
+  margin: 7px 0 0;
+  font-size: 11px;
+  color: rgba(9, 41, 30, 0.55);
+}
+
+.availability-guest-control {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.availability-guest-control button {
+  width: 35px;
+  height: 35px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(9, 41, 30, 0.2);
+  background: transparent;
+  color: var(--green);
+  cursor: pointer;
+  font-size: 18px;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+.availability-guest-control button:hover:not(:disabled) {
+  background: var(--green);
+  color: var(--white);
+}
+
+.availability-guest-control button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+#availabilityGuests {
+  min-width: 20px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* =========================================
+   AVAILABILITY — LIVE ESTIMATE
+========================================= */
+
+.availability-estimate {
+  margin: 10px 0 24px;
+  padding: 23px 0;
+  border-top: 1px solid rgba(9, 41, 30, 0.12);
+  border-bottom: 1px solid rgba(9, 41, 30, 0.12);
+}
+
+.availability-estimate[hidden] {
+  display: none !important;
+}
+
+.availability-estimate-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+  font-size: 12px;
+}
+
+.availability-estimate-row span {
+  color: rgba(9, 41, 30, 0.65);
+}
+
+.availability-estimate-row strong {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.availability-estimate-total {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 15px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(9, 41, 30, 0.12);
+}
+
+.availability-estimate-total > div {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.availability-estimate-total span {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+
+.availability-estimate-total small {
+  color: rgba(9, 41, 30, 0.6);
+  font-size: 11px;
+}
+
+.availability-estimate-total strong {
+  font-family: var(--font-heading);
+  font-size: clamp(27px, 4vw, 39px);
+  font-weight: 500;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* Unavailable dates */
+.availability-day.is-booked {
+  background: #f9e8e6;
+  color: #a63c35;
+  border-color: rgba(166, 60, 53, 0.2);
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .season-price {
+    font-size: 30px;
+  }
+
+  .availability-guest-selector {
+    padding: 18px 0;
+  }
+
+  .availability-guest-control {
+    gap: 12px;
+  }
+
+  .availability-estimate-total strong {
+    font-size: 28px;
+  }
+}
+
+
+/* Final calendar date states */
+.availability-day.is-booked,
+.availability-day.is-booked:disabled {
+  background: #b83a3a;
+  color: #ffffff;
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.availability-day.is-selected {
+  background: var(--green);
+  color: var(--ivory);
+  opacity: 1;
+}
+
+.availability-day.is-in-range {
+  background: #d1e3d2;
+  color: var(--green);
+}
+
+
+/* Detailed seasonal price breakdown */
+.availability-season-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 12px 0;
+  border-top: 1px solid rgba(9, 41, 30, 0.12);
+  border-bottom: 1px solid rgba(9, 41, 30, 0.12);
+}
+
+.availability-season-breakdown .availability-estimate-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+}
+
+.availability-season-breakdown .availability-estimate-row span {
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.availability-season-breakdown .availability-estimate-row strong {
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.availability-estimate[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 600px) {
+  .availability-season-breakdown .availability-estimate-row {
+    gap: 10px;
+  }
+
+  .availability-season-breakdown .availability-estimate-row span,
+  .availability-season-breakdown .availability-estimate-row strong {
+    font-size: 11px;
+  }
+}

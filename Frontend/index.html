@@ -32,7 +32,7 @@
 
   <link rel="stylesheet" href="styles/styles.css">
 
-  <script src="scripts/scripts.js" defer></script>
+  <script type="module" src="scripts/scripts.js" defer></script>
 </head>
 
 <body>
@@ -463,10 +463,12 @@
           STARTING FROM
         </span>
 
-        <div class="pricing-amount">
-          <span class="pricing-currency">KSh</span>
-          <span class="pricing-number">18,000</span>
-        </div>
+
+<div class="pricing-amount">
+  <span class="pricing-currency">KSh</span>
+  <span class="pricing-number" id="homepageStartingPrice">—</span>
+</div>
+
 
         <span class="pricing-per-night">
           PER NIGHT
@@ -500,70 +502,64 @@
 
 
       <!-- RIGHT: STAY DETAILS -->
-      <div class="pricing-details">
+     
+<div class="pricing-details">
+  <div class="pricing-details-heading">
+    <span>SEASONAL RATES</span>
+    <span>2026</span>
+  </div>
 
-        <div class="pricing-details-heading">
-          <span>THE DETAILS</span>
-          <span>01 — 04</span>
-        </div>
+  <div class="pricing-detail-item">
+    <div class="pricing-detail-top">
+      <span class="pricing-detail-index">01</span>
+      <h3>Low Season</h3>
+    </div>
+    <p>May · June · September</p>
+    <strong class="season-price" id="homepageLowRate">—</strong>
+  </div>
 
-        <div class="pricing-detail-item">
+  <div class="pricing-detail-item">
+    <div class="pricing-detail-top">
+      <span class="pricing-detail-index">02</span>
+      <h3>Mid Season</h3>
+    </div>
+    <p>April · November</p>
+    <strong class="season-price" id="homepageMidRate">—</strong>
+  </div>
 
-          <div class="pricing-detail-top">
-            <span class="pricing-detail-index">01</span>
-            <h3>Nightly Rate</h3>
-          </div>
+  <div class="pricing-detail-item">
+    <div class="pricing-detail-top">
+      <span class="pricing-detail-index">03</span>
+      <h3>High Season</h3>
+    </div>
+    <p>Easter · August · December 1–19</p>
+    <strong class="season-price" id="homepageHighRate">—</strong>
+  </div>
 
-          <p>
-            From KSh 18,000 per night.
-            Rates may vary depending on your dates.
-          </p>
+  <div class="pricing-detail-item">
+    <div class="pricing-detail-top">
+      <span class="pricing-detail-index">04</span>
+      <h3>Peak Season</h3>
+    </div>
+    <p>Christmas · New Year</p>
+    <strong class="season-price" id="homepagePeakRate">—</strong>
+  </div>
 
-        </div>
+  <div class="pricing-guest-note">
+    <span id="homepageGuestDetails">
+      Rates include up to 8 guests.
+    </span>
+    <span id="homepageExtraGuestRate">
+      Additional guests: KSh 1,500 per person / night.
+    </span>
+    <span id="homepageMinimumStay">
+      Peak season: 7-night minimum.
+    </span>
+  </div>
 
-        <div class="pricing-detail-item">
+  <p class="pricing-data-status" id="pricingDataStatus" role="status"></p>
+</div>
 
-          <div class="pricing-detail-top">
-            <span class="pricing-detail-index">02</span>
-            <h3>Minimum Stay</h3>
-          </div>
-
-          <p>
-            A minimum of two nights,
-            giving you time to truly settle in.
-          </p>
-
-        </div>
-
-        <div class="pricing-detail-item">
-
-          <div class="pricing-detail-top">
-            <span class="pricing-detail-index">03</span>
-            <h3>Availability</h3>
-          </div>
-
-          <p>
-            Select your preferred dates to check
-            availability and your total stay price.
-          </p>
-
-        </div>
-
-        <div class="pricing-detail-item">
-
-          <div class="pricing-detail-top">
-            <span class="pricing-detail-index">04</span>
-            <h3>Reservations</h3>
-          </div>
-
-          <p>
-            Secure your stay through our
-            online booking process.
-          </p>
-
-        </div>
-
-      </div>
 
     </div>
 
@@ -695,6 +691,45 @@
         role="group"
         aria-label="Select check-in and check-out dates"
       ></div>
+
+      
+<div class="availability-guest-selector">
+  <div>
+    <span class="availability-field-label">NUMBER OF GUESTS</span>
+    <p>Including children</p>
+  </div>
+
+  <div class="availability-guest-control">
+    <button type="button" id="guestDecrease"
+      aria-label="Remove one guest">−</button>
+
+    <output id="availabilityGuests" aria-live="polite">2</output>
+
+    <button type="button" id="guestIncrease"
+      aria-label="Add one guest">+</button>
+  </div>
+</div>
+
+<div class="availability-estimate" id="availabilityEstimate" hidden>
+  <div class="availability-estimate-row">
+    <span>Accommodation</span>
+    <strong id="estimateAccommodation">—</strong>
+  </div>
+
+  <div class="availability-estimate-row">
+    <span>Additional guests</span>
+    <strong id="estimateExtraGuests">—</strong>
+  </div>
+
+  <div class="availability-estimate-total">
+    <div>
+      <span>ESTIMATED TOTAL</span>
+      <small id="estimateNights"></small>
+    </div>
+    <strong id="estimateTotal">—</strong>
+  </div>
+</div>
+
 
       <div class="availability-selection">
         <div class="availability-selected-dates">
