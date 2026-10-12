@@ -1611,3 +1611,88 @@ a {
     font-size: clamp(22px, 6vw, 32px);
   }
 }
+
+
+
+/* LIVE DASHBOARD RECORDS */
+
+.live-records {
+  display: flex;
+  flex-direction: column;
+}
+
+.live-record-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 0;
+  border-bottom: 1px solid rgba(9, 41, 30, 0.12);
+}
+
+.live-record-row:last-child {
+  border-bottom: none;
+}
+
+.live-record-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.live-record-row strong {
+  font-family: "Manrope", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #09291e;
+  overflow-wrap: anywhere;
+}
+
+.live-record-row small {
+  font-family: "Manrope", sans-serif;
+  font-size: 11px;
+  color: #68746d;
+}
+
+.live-record-right {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+#livePaymentRecords {
+  padding: 0 4px 8px;
+}
+
+#livePaymentRecords .data-table td:first-child {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+  max-width: 220px;
+}
+
+#livePaymentRecords .muted {
+  padding: 24px;
+}
+
+@media (max-width: 600px) {
+  .live-record-row {
+    gap: 12px;
+    padding: 16px 0;
+  }
+
+  .live-record-row strong {
+    font-size: 12px;
+  }
+
+  .live-record-row small {
+    font-size: 10px;
+  }
+
+  #livePaymentRecords {
+    overflow-x: auto;
+  }
+
+  #livePaymentRecords table {
+    min-width: 720px;
+  }
+}

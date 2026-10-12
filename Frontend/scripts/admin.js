@@ -58,8 +58,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const state = {
     page: "overview",
-    reservations: [],
-    manualBlocks: new Map(),
+reservations: [],
+payments: [],
+manualBlocks: new Map(),
+airbnbBlocks: new Set(),
     selectedStart: null,
     selectedEnd: null,
     calendarMonth: new Date(
@@ -238,81 +240,574 @@ document.addEventListener("DOMContentLoaded", () => {
      FIRESTORE LOADING
   ===================================== */
 
-  async function loadFirestoreData() {
-    const [
-      pricingSnapshot,
-      propertySnapshot,
-      blocksSnapshot,
-      reservationsSnapshot
-    ] = await Promise.all([
-      getDoc(doc(db, "settings", "pricing")),
-      getDoc(doc(db, "settings", "property")),
-      getDocs(collection(db, "blockedDates")),
-      getDocs(collection(db, "reservations"))
-    ]);
 
-    if (pricingSnapshot.exists()) {
-      const saved = pricingSnapshot.data();
+async function loadFirestoreData() {
+const [
+  pricingSnapshot,
+  propertySnapshot,
+  blocksSnapshot,
+  reservationsSnapshot,
+  airbnbSnapshot
+] = await Promise.all([
+  getDoc(doc(db, "settings", "pricing")),
+  getDoc(doc(db, "settings", "property")),
+  getDocs(collection(db, "blockedDates")),
+  getDocs(collection(db, "reservations")),
+  getDocs(collection(db, "airbnbBlockedDates"))
+]);
 
-      state.pricing = {
-        ...state.pricing,
-        ...saved,
-        rates: {
-          ...state.pricing.rates,
-          ...(saved.rates || {})
-        }
-      };
-    } else {
-      // Preserve previously saved browser pricing
-      // until the owner explicitly clicks Save.
-      loadSavedPricing();
-    }
-
-    if (propertySnapshot.exists()) {
-      state.settings = {
-        ...state.settings,
-        ...propertySnapshot.data()
-      };
-    }
-
-    state.manualBlocks = new Map(
-      blocksSnapshot.docs.map(snapshot => [
-        snapshot.id,
-        snapshot.data().reason || "Blocked"
-      ])
+  // Load payments separately so a permission error
+  // doesn't stop the rest of the dashboard.
+  try {
+    const paymentsSnapshot = await getDocs(
+      collection(db, "payments")
     );
 
-    state.reservations = reservationsSnapshot.docs.map(
-      snapshot => ({
-        ...snapshot.data(),
-        id: snapshot.id
-      })
-    );
+    state.payments = paymentsSnapshot.docs.map(snapshot => ({
+      ...snapshot.data(),
+      id: snapshot.id
+    }));
 
-    firestoreReady = true;
+  } catch (error) {
+    state.payments = [];
 
-    renderPricing();
-    renderPropertySettings();
-    renderReservations();
-    renderCalendar();
-
-    const connection = $(".connection-card");
-
-    if (connection) {
-      const heading = connection.querySelector("strong");
-      const description = connection.querySelector("small");
-
-      if (heading) heading.textContent = "Firebase connected";
-      if (description) {
-        description.textContent = "Firestore database online";
-      }
-    }
-
-    console.log(
-      "Hippo House Firestore connected:",
-      firebaseConfig.projectId
+    console.warn(
+      "Payment records could not be loaded. " +
+      "Firestore may require administrator access.",
+      error.message
     );
   }
+
+  if (pricingSnapshot.exists()) {
+    const saved = pricingSnapshot.data();
+
+    state.pricing = {
+      ...state.pricing,
+      ...saved,
+      rates: {
+        ...state.pricing.rates,
+        ...(saved.rates || {})
+      }
+    };
+  } else {
+    loadSavedPricing();
+  }
+
+  if (propertySnapshot.exists()) {
+    state.settings = {
+      ...state.settings,
+      ...propertySnapshot.data()
+    };
+  }
+
+  state.manualBlocks = new Map(
+    blocksSnapshot.docs.map(snapshot => [
+      snapshot.id,
+      snapshot.data().reason || "Blocked"
+    ])
+  );
+
+  state.airbnbBlocks = new Set(
+  airbnbSnapshot.docs.map(snapshot =>
+    snapshot.data().date || snapshot.id
+  )
+);
+
+  state.reservations = reservationsSnapshot.docs.map(snapshot => {
+    const data = snapshot.data();
+
+    return {
+      ...data,
+      id: snapshot.id,
+      name: data.fullName || data.name || "Guest",
+      paid: Number(data.paid || 0),
+      total: Number(data.total || 0),
+      nights: Number(
+        data.nights ||
+        nightsBetween(data.checkin, data.checkout)
+      ),
+      source: data.source || (
+        data.paymentStatus === "paid"
+          ? "paystack"
+          : "manual_admin"
+      )
+    };
+  });
+
+  firestoreReady = true;
+
+  renderPricing();
+  renderPropertySettings();
+  renderReservations();
+  renderCalendar();
+  renderDashboardOverview();
+  renderDashboardPayments();
+
+  const connection = $(".connection-card");
+
+  if (connection) {
+    const heading = connection.querySelector("strong");
+    const description = connection.querySelector("small");
+
+    if (heading) {
+      heading.textContent = "Firebase connected";
+    }
+
+    if (description) {
+      description.textContent =
+        "Firestore database online";
+    }
+  }
+
+  console.log(
+    "Hippo House Firestore connected:",
+    firebaseConfig.projectId
+  );
+}
+
+
+  
+/* =====================================
+   LIVE ADMIN DASHBOARD
+===================================== */
+
+function paymentIsConfirmed(payment) {
+  return payment.status === "confirmed";
+}
+
+function reservationIsConfirmed(reservation) {
+  return reservation.status === "confirmed";
+}
+
+function paymentDateValue(value) {
+  if (!value) return 0;
+
+  if (typeof value.toMillis === "function") {
+    return value.toMillis();
+  }
+
+  if (typeof value.toDate === "function") {
+    return value.toDate().getTime();
+  }
+
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function reservationCreatedAt(reservation) {
+  return paymentDateValue(
+    reservation.createdAtServer || reservation.createdAt
+  );
+}
+
+function setStat(section, index, value, foot) {
+  const cards = $$(`${section} .stat-card`);
+  const card = cards[index];
+
+  if (!card) return;
+
+  const number = card.querySelector(".stat-value");
+  const footer = card.querySelector(".stat-foot");
+
+  if (number) number.textContent = value;
+  if (footer && foot) footer.textContent = foot;
+}
+
+
+function paidAmountForReservation(reservation) {
+  if (reservation.source === "manual_admin") {
+    return Number(reservation.paid || 0);
+  }
+
+  if (
+    reservation.status === "confirmed" &&
+    reservation.paymentStatus === "paid"
+  ) {
+    return Number(reservation.total || 0);
+  }
+
+  return 0;
+}
+
+
+
+function renderDashboardOverview() {
+  if (!firestoreReady) return;
+
+  const reservations = state.reservations;
+  const confirmed = reservations.filter(reservationIsConfirmed);
+
+  const todayKey = dateKey(today);
+
+  const upcoming = confirmed.filter(
+    reservation => reservation.checkin >= todayKey
+  );
+
+  const arrivals = confirmed.filter(
+    reservation => reservation.checkin === todayKey
+  );
+
+  const departures = confirmed.filter(
+    reservation => reservation.checkout === todayKey
+  );
+
+  const inHouse = confirmed.filter(
+    reservation =>
+      reservation.checkin <= todayKey &&
+      reservation.checkout > todayKey
+  );
+
+  // Revenue includes verified online payments and
+const onlineRevenue = reservations
+  .filter(reservation =>
+    reservation.status === "confirmed" &&
+    reservation.source !== "manual_admin" &&
+    reservation.paymentStatus === "paid"
+  )
+  .reduce(
+    (sum, reservation) =>
+      sum + Number(reservation.total || 0),
+    0
+  );
+
+  const manualRevenue = reservations
+    .filter(reservation =>
+      reservation.source === "manual_admin" &&
+      reservation.status !== "cancelled"
+    )
+    .reduce((sum, reservation) =>
+      sum + Number(reservation.paid || 0), 0
+    );
+
+  const revenue = onlineRevenue + manualRevenue;
+
+  // Occupancy is calculated for the next 30 nights.
+  const period = 30;
+  let occupiedNights = 0;
+
+  for (let i = 0; i < period; i++) {
+    const day = new Date(today);
+    day.setDate(day.getDate() + i);
+
+    const key = dateKey(day);
+
+    if (confirmed.some(reservation =>
+      key >= reservation.checkin &&
+      key < reservation.checkout
+    )) {
+      occupiedNights++;
+    }
+  }
+
+  const occupancy = Math.round(
+    (occupiedNights / period) * 100
+  );
+
+  setStat(
+    "#page-overview", 0,
+    String(reservations.length),
+    `${confirmed.length} confirmed reservations`
+  );
+
+  setStat(
+    "#page-overview", 1,
+    String(upcoming.length),
+    "Confirmed upcoming arrivals"
+  );
+
+  setStat(
+    "#page-overview", 2,
+    money(revenue),
+    "Recorded payments received"
+  );
+
+  setStat(
+    "#page-overview", 3,
+    `${occupancy}%`,
+    "Next 30 nights"
+  );
+
+  const activityNumbers = $$(".activity-stats strong");
+
+  if (activityNumbers[0]) {
+    activityNumbers[0].textContent = arrivals.length;
+  }
+
+  if (activityNumbers[1]) {
+    activityNumbers[1].textContent = departures.length;
+  }
+
+  if (activityNumbers[2]) {
+    activityNumbers[2].textContent =
+      inHouse.reduce(
+        (sum, reservation) =>
+          sum + Number(reservation.guests || 0),
+        0
+      );
+  }
+
+  const activityPanel = $("#page-overview .content-grid .panel");
+
+  if (activityPanel) {
+    const emptyAreas = activityPanel.querySelectorAll(
+      ".empty-inline"
+    );
+
+    function showGuests(container, bookings, emptyText) {
+      if (!container) return;
+
+      container.replaceChildren();
+
+      if (!bookings.length) {
+        const message = document.createElement("p");
+        message.textContent = emptyText;
+        container.appendChild(message);
+        return;
+      }
+
+      bookings.forEach(reservation => {
+        const line = document.createElement("p");
+        line.textContent =
+          `${reservation.name} · ` +
+          `${reservation.guests || 0} guest(s)`;
+        container.appendChild(line);
+      });
+    }
+
+    showGuests(
+      emptyAreas[0],
+      arrivals,
+      "No scheduled arrivals today."
+    );
+
+    showGuests(
+      emptyAreas[1],
+      departures,
+      "No scheduled departures today."
+    );
+  }
+
+  const recentPanel = $("#page-overview .recent-panel");
+
+  if (recentPanel) {
+    const oldEmpty = recentPanel.querySelector(".empty-state");
+    if (oldEmpty) oldEmpty.remove();
+
+    let recentList = recentPanel.querySelector(
+      "#liveRecentReservations"
+    );
+
+    if (!recentList) {
+      recentList = document.createElement("div");
+      recentList.id = "liveRecentReservations";
+      recentList.className = "live-records";
+      recentPanel.appendChild(recentList);
+    }
+
+    recentList.replaceChildren();
+
+    const recent = [...reservations]
+      .sort((a, b) =>
+        reservationCreatedAt(b) -
+        reservationCreatedAt(a)
+      )
+      .slice(0, 5);
+
+    if (!recent.length) {
+      const empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = "No reservations recorded yet.";
+      recentList.appendChild(empty);
+    }
+
+    recent.forEach(reservation => {
+      const row = document.createElement("div");
+      row.className = "live-record-row";
+
+      const info = document.createElement("div");
+      const name = document.createElement("strong");
+      const dates = document.createElement("small");
+
+      name.textContent = reservation.name;
+      dates.textContent =
+        `${formatDate(reservation.checkin)} – ` +
+        `${formatDate(reservation.checkout)}`;
+
+      info.append(name, dates);
+
+      const right = document.createElement("div");
+      right.className = "live-record-right";
+
+      const amount = document.createElement("strong");
+      amount.textContent = money(reservation.total || 0);
+
+      const status = document.createElement("small");
+      status.textContent = reservation.status || "pending";
+
+      right.append(amount, status);
+      row.append(info, right);
+      recentList.appendChild(row);
+    });
+  }
+}
+
+function renderDashboardPayments() {
+  if (!firestoreReady) return;
+
+  const onlinePayments = state.payments;
+
+  const successful = onlinePayments.filter(paymentIsConfirmed);
+
+const onlineReceived = state.reservations
+  .filter(reservation =>
+    reservation.status === "confirmed" &&
+    reservation.source !== "manual_admin" &&
+    reservation.paymentStatus === "paid"
+  )
+  .reduce(
+    (sum, reservation) =>
+      sum + Number(reservation.total || 0),
+    0
+  );
+
+  const manualReceived = state.reservations
+    .filter(reservation =>
+      reservation.source === "manual_admin" &&
+      reservation.status !== "cancelled"
+    )
+    .reduce(
+      (sum, reservation) =>
+        sum + Number(reservation.paid || 0),
+      0
+    );
+
+  const outstanding = state.reservations
+    .filter(reservation =>
+      reservation.status !== "cancelled"
+    )
+    .reduce((sum, reservation) => {
+      const total = Number(reservation.total || 0);
+      const paid = paidAmountForReservation(reservation);
+
+      return sum + Math.max(0, total - paid);
+    }, 0);
+
+  setStat(
+    "#page-payments", 0,
+    money(onlineReceived + manualReceived),
+    "Verified online + recorded manual receipts"
+  );
+
+  setStat(
+    "#page-payments", 1,
+    money(outstanding),
+    "Outstanding on saved reservations"
+  );
+
+  setStat(
+    "#page-payments", 2,
+    String(successful.length),
+    "Verified online transactions"
+  );
+
+  const connection = $("#page-payments .status-pill");
+
+  if (connection) {
+    connection.textContent = "PAYMENT RECORDS CONNECTED";
+    connection.classList.remove("offline");
+  }
+
+  const panel = $("#page-payments .panel");
+  if (!panel) return;
+
+  const empty = panel.querySelector(".empty-state");
+  if (empty) empty.remove();
+
+  let tableContainer = panel.querySelector("#livePaymentRecords");
+
+  if (!tableContainer) {
+    tableContainer = document.createElement("div");
+    tableContainer.id = "livePaymentRecords";
+    tableContainer.className = "table-scroll";
+    panel.appendChild(tableContainer);
+  }
+
+  tableContainer.replaceChildren();
+
+  if (!onlinePayments.length) {
+    const message = document.createElement("p");
+    message.className = "muted";
+    message.textContent = "No online payment records yet.";
+    tableContainer.appendChild(message);
+    return;
+  }
+
+  const table = document.createElement("table");
+  table.className = "data-table";
+
+  const thead = document.createElement("thead");
+  const headRow = document.createElement("tr");
+
+  ["REFERENCE", "GUEST", "AMOUNT", "STATUS", "DATE"]
+    .forEach(label => {
+      const th = document.createElement("th");
+      th.textContent = label;
+      headRow.appendChild(th);
+    });
+
+  thead.appendChild(headRow);
+
+  const tbody = document.createElement("tbody");
+
+  const sortedPayments = [...onlinePayments].sort(
+    (a, b) =>
+      paymentDateValue(b.createdAt) -
+      paymentDateValue(a.createdAt)
+  );
+
+  sortedPayments.forEach(payment => {
+    const row = document.createElement("tr");
+
+    const created = paymentDateValue(payment.createdAt);
+
+    const values = [
+      payment.reference || payment.id,
+      payment.fullName || payment.email || "Guest",
+      money(payment.total || 0),
+      payment.status || "pending",
+      created
+        ? new Date(created).toLocaleDateString("en-GB")
+        : "—"
+    ];
+
+    values.forEach((value, index) => {
+      const cell = document.createElement("td");
+
+      if (index === 3) {
+        const badge = document.createElement("span");
+        const status = payment.status || "pending";
+
+        badge.className =
+          `status-badge status-${status === "confirmed"
+            ? "confirmed"
+            : "pending"}`;
+
+        badge.textContent = status;
+        cell.appendChild(badge);
+      } else {
+        cell.textContent = value;
+      }
+
+      row.appendChild(cell);
+    });
+
+    tbody.appendChild(row);
+  });
+
+  table.append(thead, tbody);
+  tableContainer.appendChild(table);
+}
+
 
   /* =====================================
      SEASONAL PRICING CALCULATIONS
@@ -472,6 +967,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (page === "availability") renderCalendar();
     if (page === "reservations") renderReservations();
+
+    if (page === "overview") {
+  renderDashboardOverview();
+}
+
+if (page === "payments") {
+  renderDashboardPayments();
+}
 
     window.scrollTo({ top: 0, behavior: "auto" });
   }
@@ -674,11 +1177,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function hasManualBlockConflict(start, end) {
-    return datesBetween(start, end).some(key =>
-      state.manualBlocks.has(key)
-    );
-  }
+function hasManualBlockConflict(start, end) {
+  return datesBetween(start, end).some(key =>
+    state.manualBlocks.has(key) ||
+    state.airbnbBlocks.has(key)
+  );
+}
 
   function isReserved(key) {
     return state.reservations.some(reservation =>
@@ -871,6 +1375,8 @@ document.addEventListener("DOMContentLoaded", () => {
         closeReservationModal();
         renderReservations();
         renderCalendar();
+        renderDashboardOverview();
+        renderDashboardPayments();
 
         showToast("Reservation saved to Firestore.");
 
@@ -1127,7 +1633,9 @@ document.addEventListener("DOMContentLoaded", () => {
       button.textContent = day;
 
       const isPast = key < dateKey(today);
-      const blocked = state.manualBlocks.has(key);
+      const blocked =
+  state.manualBlocks.has(key) ||
+  state.airbnbBlocks.has(key);
       const reserved = isReserved(key);
 
       const selected =
@@ -1136,6 +1644,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (isPast) button.classList.add("is-past");
       if (blocked) button.classList.add("is-blocked");
+      if (state.airbnbBlocks.has(key)) {
+  button.title = "Unavailable — Airbnb";
+}
       if (reserved) button.classList.add("is-reserved");
       if (selected) button.classList.add("is-selected");
 

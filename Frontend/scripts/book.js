@@ -247,15 +247,17 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function loadBookingData() {
-    const [
-      pricingSnapshot,
-      blockedSnapshot,
-      reservationsSnapshot
-    ] = await Promise.all([
-      getDoc(doc(db, "settings", "pricing")),
-      getDocs(collection(db, "blockedDates")),
-      getDocs(collection(db, "reservations"))
-    ]);
+const [
+  pricingSnapshot,
+  blockedSnapshot,
+  reservationsSnapshot,
+  airbnbSnapshot
+] = await Promise.all([
+  getDoc(doc(db, "settings", "pricing")),
+  getDocs(collection(db, "blockedDates")),
+  getDocs(collection(db, "reservations")),
+  getDocs(collection(db, "airbnbBlockedDates"))
+]);
 
     if (!pricingSnapshot.exists()) {
       throw new Error("settings/pricing does not exist.");
@@ -266,6 +268,15 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     const unavailable = new Set();
+
+    airbnbSnapshot.forEach(snapshot => {
+  const date = snapshot.data().date || snapshot.id;
+
+  if (parseDate(date)) {
+    unavailable.add(date);
+  }
+});
+
 
     blockedSnapshot.forEach(snapshot => {
       const block = snapshot.data();
@@ -974,11 +985,21 @@ document.addEventListener("DOMContentLoaded", () => {
     goToStep(2);
   });
 
-  /* =========================================
-     PAYMENT PLACEHOLDER
-  ========================================= */
 
-  elements.submitBooking?.addEventListener("click", () => {
+
+/* =========================================
+   PAYSTACK PAYMENT INTEGRATION
+========================================= */
+
+const API_BASE = "http://localhost:3000";
+
+let paymentInProgress = false;
+
+elements.submitBooking?.addEventListener(
+  "click",
+  async () => {
+    if (paymentInProgress) return;
+
     clearMessages();
 
     const result = calculateStay();
@@ -996,29 +1017,151 @@ document.addEventListener("DOMContentLoaded", () => {
 
     updateReview();
 
-    /*
-      Future payment integration:
+    const button = elements.submitBooking;
+    const originalHTML = button.innerHTML;
 
-      Send checkin, checkout, guests and guest
-      information to a secure backend.
+    try {
+      paymentInProgress = true;
+      button.disabled = true;
+      button.textContent = "PREPARING PAYMENT...";
 
-      The backend must independently:
-      - Check current availability
-      - Recalculate rates from Firestore
-      - Create a temporary booking hold
-      - Initialize payment
-      - Verify payment
-      - Confirm the reservation
+      const response = await fetch(
+        `${API_BASE}/api/payments/initialize`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            checkin: booking.checkin,
+            checkout: booking.checkout,
+            guests: booking.guests,
+            fullName: booking.fullName,
+            email: booking.email,
+            phone: booking.phone,
+            specialRequests: booking.specialRequests
+          })
+        }
+      );
 
-      Never trust a browser-calculated total
-      when collecting payment.
-    */
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || "Could not initialize payment."
+        );
+      }
+
+      if (!data.authorization_url ||
+          !data.authorization_url.startsWith(
+            "https://checkout.paystack.com/"
+          )) {
+        throw new Error("Invalid Paystack checkout URL.");
+      }
+
+      showMessage(
+        elements.submitMessage,
+        "Redirecting to secure Paystack checkout..."
+      );
+
+      window.location.assign(data.authorization_url);
+
+    } catch (error) {
+      console.error("Payment initialization:", error);
+
+      showMessage(
+        elements.submitMessage,
+        error.message ||
+          "Payment could not be started. Please try again."
+      );
+
+      paymentInProgress = false;
+      button.disabled = false;
+      button.innerHTML = originalHTML;
+    }
+  }
+);
+
+/* =========================================
+   PAYMENT RETURN HANDLER
+========================================= */
+
+async function handlePaymentReturn() {
+  const params = new URLSearchParams(window.location.search);
+
+  const reference = params.get("payment_reference");
+
+  if (!reference) return;
+
+  showMessage(
+    elements.stayMessage,
+    "Checking your payment status..."
+  );
+
+  try {
+    const response = await fetch(
+      `${API_BASE}/api/payments/verify/${encodeURIComponent(reference)}`
+    );
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(
+        result.message ||
+          "Payment has not been confirmed."
+      );
+    }
+
+    const message =
+      `Your payment has been verified! ` +
+      `Booking reference: ${reference}. ` +
+      `Your reservation is confirmed. ` +
+      `A confirmation email will be sent to you.`;
+
+    // Replace the normal booking interface with a
+    // simple confirmation message.
+    const main = document.querySelector(".booking-container");
+
+    if (main) {
+      main.replaceChildren();
+
+      const confirmation = document.createElement("section");
+      confirmation.className = "booking-panel";
+
+      const heading = document.createElement("h1");
+      heading.textContent = "Booking confirmed.";
+
+      const paragraph = document.createElement("p");
+      paragraph.textContent = message;
+
+      const home = document.createElement("a");
+      home.href = "index.html";
+      home.className = "primary-button";
+      home.textContent = "BACK TO WEBSITE";
+
+      confirmation.append(heading, paragraph, home);
+      main.appendChild(confirmation);
+    }
+
+    window.history.replaceState(
+      {},
+      "",
+      window.location.pathname
+    );
+
+  } catch (error) {
+    console.error("Payment verification:", error);
 
     showMessage(
-      elements.submitMessage,
-      "Online payments are not yet enabled. No payment has been taken and your reservation has not been confirmed."
+      elements.stayMessage,
+      "We could not confirm your reservation automatically. " +
+      "If money was deducted, do not pay again. " +
+      `Contact the property with reference ${reference}. ` +
+      error.message
     );
-  });
+  }
+}
+
 
   /* =========================================
      MONTH NAVIGATION
@@ -1120,6 +1263,16 @@ document.addEventListener("DOMContentLoaded", () => {
   ========================================= */
 
   async function initialize() {
+
+    const paymentParams = new URLSearchParams(
+  window.location.search
+);
+
+if (paymentParams.has("payment_reference")) {
+  await handlePaymentReturn();
+  return;
+}
+
     elements.guestCount.disabled = true;
     elements.continueDetails.disabled = true;
 

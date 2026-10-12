@@ -827,15 +827,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   ========================================= */
 
   async function loadBookingData() {
-    const [
-      pricingSnapshot,
-      blockedSnapshot,
-      reservationsSnapshot
-    ] = await Promise.all([
-      getDoc(doc(db, "settings", "pricing")),
-      getDocs(collection(db, "blockedDates")),
-      getDocs(collection(db, "reservations"))
-    ]);
+const [
+  pricingSnapshot,
+  blockedSnapshot,
+  reservationsSnapshot,
+  airbnbSnapshot
+] = await Promise.all([
+  getDoc(doc(db, "settings", "pricing")),
+  getDocs(collection(db, "blockedDates")),
+  getDocs(collection(db, "reservations")),
+  getDocs(collection(db, "airbnbBlockedDates"))
+]);
 
     if (!pricingSnapshot.exists()) {
       throw new Error("settings/pricing was not found.");
@@ -843,6 +845,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const savedPricing = normalizePricing(pricingSnapshot.data());
     const unavailable = new Set();
+
+airbnbSnapshot.forEach(snapshot => {
+  const date = snapshot.data().date || snapshot.id;
+
+  if (parseDate(date)) {
+    unavailable.add(date);
+  }
+});
 
     blockedSnapshot.forEach(snapshot => {
       const block = snapshot.data();

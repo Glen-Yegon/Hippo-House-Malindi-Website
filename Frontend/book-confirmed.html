@@ -1,0 +1,362 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Booking Confirmation | Hippo House Malindi</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --green: #09291e;
+      --gold: #aa9256;
+      --cream: #faf9f5;
+      --muted: #68746d;
+      --line: rgba(9, 41, 30, 0.14);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--cream);
+      color: var(--green);
+      font-family: "Manrope", sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      padding: 28px 6%;
+      border-bottom: 1px solid var(--line);
+      text-align: center;
+    }
+
+    .brand {
+      font-family: "Cormorant Garamond", serif;
+      font-size: clamp(25px, 3vw, 34px);
+      font-weight: 600;
+      color: var(--green);
+      text-decoration: none;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 65px 20px;
+    }
+
+    .confirmation {
+      width: 100%;
+      max-width: 620px;
+      text-align: center;
+    }
+
+    .symbol {
+      width: 86px;
+      height: 86px;
+      border: 1px solid var(--gold);
+      border-radius: 50%;
+      margin: 0 auto 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--green);
+    }
+
+    .symbol svg {
+      width: 36px;
+      height: 36px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .symbol.loading {
+      border-color: var(--line);
+    }
+
+    .spinner {
+      width: 31px;
+      height: 31px;
+      border: 2px solid var(--line);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .eyebrow {
+      text-transform: uppercase;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: var(--gold);
+      margin: 0 0 18px;
+    }
+
+    h1 {
+      font-family: "Cormorant Garamond", serif;
+      font-size: clamp(48px, 7vw, 76px);
+      line-height: 0.98;
+      font-weight: 500;
+      letter-spacing: -1.5px;
+      margin: 0 0 25px;
+    }
+
+    .description {
+      font-size: 14px;
+      line-height: 1.9;
+      color: var(--muted);
+      max-width: 450px;
+      margin: 0 auto 36px;
+    }
+
+    .reference {
+      padding: 22px 20px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      margin: 0 auto 38px;
+      max-width: 480px;
+    }
+
+    .reference-label {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .reference-value {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+
+    .home-btn {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 55px;
+      min-width: 210px;
+      padding: 16px 32px;
+      background: var(--green);
+      color: white;
+      text-decoration: none;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      transition: background 0.2s;
+    }
+
+    .home-btn:hover {
+      background: #164634;
+    }
+
+    .footer {
+      text-align: center;
+      border-top: 1px solid var(--line);
+      padding: 23px 20px;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    @media (max-width: 600px) {
+      .header { padding: 20px; }
+      main { padding: 45px 22px; }
+      .symbol { width: 74px; height: 74px; }
+      .description { font-size: 13px; }
+      .home-btn { width: 100%; }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="header">
+    <a href="index.html" class="brand">Hippo House Malindi</a>
+  </header>
+
+  <main>
+    <section class="confirmation" aria-live="polite">
+      <div class="symbol loading" id="statusIcon">
+        <div class="spinner"></div>
+      </div>
+
+      <p class="eyebrow" id="eyebrow">Reservation Status</p>
+
+      <h1 id="statusTitle">Verifying your payment</h1>
+
+      <p class="description" id="statusDescription">
+        Please wait while we securely verify your transaction
+        and confirm your reservation.
+      </p>
+
+      <div class="reference" id="referenceBox" hidden>
+        <span class="reference-label">Booking Reference</span>
+        <span class="reference-value" id="referenceValue"></span>
+      </div>
+
+      <a href="index.html" class="home-btn">Back to Home</a>
+    </section>
+  </main>
+
+  <footer class="footer">
+    &copy; <span id="year"></span> Hippo House Malindi.
+    All rights reserved.
+  </footer>
+
+  <script>
+    const API_BASE = "http://localhost:3000";
+
+    const icons = {
+      success: `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 12.5l4.5 4.5L19 7"></path>
+        </svg>
+      `,
+      error: `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18"></path>
+        </svg>
+      `,
+      pending: `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M12 7v5l3 2"></path>
+        </svg>
+      `
+    };
+
+    const icon = document.getElementById("statusIcon");
+    const title = document.getElementById("statusTitle");
+    const description = document.getElementById("statusDescription");
+    const eyebrow = document.getElementById("eyebrow");
+    const referenceBox = document.getElementById("referenceBox");
+    const referenceValue = document.getElementById("referenceValue");
+
+    document.getElementById("year").textContent =
+      new Date().getFullYear();
+
+    function showStatus(type, heading, message) {
+      icon.classList.remove("loading");
+      icon.innerHTML = icons[type] || icons.error;
+      title.textContent = heading;
+      description.textContent = message;
+
+      eyebrow.textContent =
+        type === "success" ? "Reservation Confirmed" :
+        type === "pending" ? "Verification Pending" :
+        "Reservation Status";
+    }
+
+    async function verifyPayment() {
+      const params = new URLSearchParams(window.location.search);
+
+      const reference =
+        params.get("payment_reference") ||
+        params.get("reference") ||
+        params.get("trxref");
+
+      if (!reference) {
+        showStatus(
+          "error",
+          "No payment reference",
+          "We could not find a payment reference in this link. If you have already paid, please contact the property with your payment receipt before attempting another payment."
+        );
+        return;
+      }
+
+      referenceValue.textContent = reference;
+      referenceBox.hidden = false;
+
+      try {
+        const response = await fetch(
+          `${API_BASE}/api/payments/verify/${encodeURIComponent(reference)}`,
+          {
+            method: "GET",
+            cache: "no-store"
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+            data.error ||
+            "Payment verification could not be completed."
+          );
+        }
+
+        // The backend must explicitly confirm the payment.
+        const confirmed =
+          data.success === true &&
+          (
+            data.status === "confirmed" ||
+            data.payment?.status === "confirmed" ||
+            data.reservation?.status === "confirmed"
+          );
+
+        if (confirmed) {
+          showStatus(
+            "success",
+            "Your stay is confirmed.",
+            "Your payment has been verified and your reservation is confirmed. We look forward to welcoming you to Hippo House Malindi."
+          );
+          return;
+        }
+
+        const failed =
+          data.status === "failed" ||
+          data.status === "abandoned" ||
+          data.payment?.status === "failed";
+
+        if (failed) {
+          showStatus(
+            "error",
+            "Payment not completed",
+            "Your reservation has not been confirmed. If money was deducted, please contact the property with your payment reference before trying again."
+          );
+          return;
+        }
+
+        showStatus(
+          "pending",
+          "Confirmation pending",
+          "We could not confirm the payment yet. Please keep your payment reference and contact the property if you have been charged. Do not pay again until the transaction has been checked."
+        );
+
+      } catch (error) {
+        console.error("Payment verification failed:", error);
+
+        showStatus(
+          "pending",
+          "Unable to verify payment",
+          "We couldn't check your payment status right now. This does not necessarily mean your payment failed. Please keep your reference and contact the property before making another payment."
+        );
+      }
+    }
+
+    verifyPayment();
+  </script>
+</body>
+</html>
