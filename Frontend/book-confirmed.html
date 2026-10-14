@@ -7,6 +7,36 @@
   <meta name="robots" content="noindex, nofollow">
   <title>Booking Confirmation | Hippo House Malindi</title>
 
+<meta name="theme-color" content="#09291e">
+
+<!-- META PIXEL CODE -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;
+n.version='2.0';n.queue=[];
+t=b.createElement(e);t.async=!0;t.src=v;
+s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)
+}(window,document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+
+fbq('init', '3110970102429798');
+fbq('track', 'PageView');
+</script>
+
+<noscript>
+  <img
+    height="1"
+    width="1"
+    style="display:none"
+    src="https://www.facebook.com/tr?id=3110970102429798&amp;ev=PageView&amp;noscript=1"
+    alt=""
+  >
+</noscript>
+<!-- END META PIXEL CODE -->
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -227,6 +257,68 @@
   <script>
     const API_BASE = "http://localhost:3000";
 
+    
+/* =========================================
+   META PIXEL — VERIFIED PURCHASE
+========================================= */
+
+function trackMetaPurchase(payment) {
+  if (
+    payment?.success !== true ||
+    payment.status !== "confirmed" ||
+    payment.currency !== "KES"
+  ) {
+    return;
+  }
+
+  const reference = String(payment.reference || "");
+  const amount = Number(payment.amountPaidKes);
+
+  if (
+    !reference ||
+    !Number.isFinite(amount) ||
+    amount <= 0
+  ) {
+    return;
+  }
+
+  const storageKey = `meta_purchase_${reference}`;
+
+  // Prevent repeated tracking when the user refreshes.
+  try {
+    if (localStorage.getItem(storageKey) === "sent") {
+      return;
+    }
+  } catch (error) {
+    console.warn("Meta tracking storage unavailable:", error);
+  }
+
+  if (typeof window.fbq !== "function") {
+    console.warn("Meta Pixel is not available.");
+    return;
+  }
+
+  window.fbq("track", "Purchase", {
+    value: amount,
+    currency: "KES"
+  }, {
+    eventID: `purchase_${reference}`
+  });
+
+  try {
+    localStorage.setItem(storageKey, "sent");
+  } catch (error) {
+    console.warn("Could not save Meta tracking state:", error);
+  }
+
+  console.info("Meta Purchase event triggered:", {
+    reference,
+    amount,
+    currency: "KES"
+  });
+}
+
+
     const icons = {
       success: `
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -315,15 +407,22 @@
             data.payment?.status === "confirmed" ||
             data.reservation?.status === "confirmed"
           );
+          
 
-        if (confirmed) {
-          showStatus(
-            "success",
-            "Your stay is confirmed.",
-            "Your payment has been verified and your reservation is confirmed. We look forward to welcoming you to Hippo House Malindi."
-          );
-          return;
-        }
+if (confirmed) {
+  // Display the successful booking confirmation.
+  showStatus(
+    "success",
+    "Your stay is confirmed.",
+    "Your payment has been verified and your reservation is confirmed. We look forward to welcoming you to Hippo House Malindi."
+  );
+
+  // META PIXEL — TRACK ACTUAL VERIFIED PAYMENT
+  trackMetaPurchase(data);
+
+  return;
+}
+
 
         const failed =
           data.status === "failed" ||

@@ -843,18 +843,30 @@ const [
      STEP 1
   ========================================= */
 
-  elements.continueDetails.addEventListener("click", () => {
-    clearMessages();
 
-    const result = calculateStay();
+elements.continueDetails.addEventListener("click", () => {
+  clearMessages();
 
-    if (!result.valid) {
-      showMessage(elements.stayMessage, result.error);
-      return;
-    }
+  const result = calculateStay();
 
-    goToStep(2);
-  });
+  if (!result.valid) {
+    showMessage(elements.stayMessage, result.error);
+    return;
+  }
+
+  // META PIXEL — VALID BOOKING CHECKOUT STARTED
+  if (typeof window.fbq === "function") {
+    window.fbq("track", "InitiateCheckout", {
+      value: result.total,
+      currency: "KES",
+      num_items: 1
+    });
+  }
+
+  goToStep(2);
+});
+
+
 
   elements.guestCount.addEventListener("change", () => {
     booking.guests = Number(elements.guestCount.value);
@@ -995,6 +1007,51 @@ const API_BASE = "http://localhost:3000";
 
 let paymentInProgress = false;
 
+
+/* =========================================
+   META PIXEL — PURCHASE TRACKING
+========================================= */
+
+function trackMetaPurchase(reference, amountPaidKes) {
+  const amount = Number(amountPaidKes);
+
+  if (
+    !reference ||
+    !Number.isFinite(amount) ||
+    amount <= 0
+  ) {
+    return;
+  }
+
+  const storageKey = `meta_purchase_${reference}`;
+
+  // Avoid tracking again on a normal page revisit.
+  try {
+    if (localStorage.getItem(storageKey) === "sent") {
+      return;
+    }
+  } catch (error) {
+    console.warn("Meta tracking storage unavailable:", error);
+  }
+
+  if (typeof window.fbq !== "function") return;
+
+  window.fbq("track", "Purchase", {
+    value: amount,
+    currency: "KES"
+  }, {
+    eventID: `purchase_${reference}`
+  });
+
+  try {
+    localStorage.setItem(storageKey, "sent");
+  } catch (error) {
+    console.warn("Could not save Meta tracking state:", error);
+  }
+}
+
+
+
 elements.submitBooking?.addEventListener(
   "click",
   async () => {
@@ -1111,6 +1168,21 @@ async function handlePaymentReturn() {
           "Payment has not been confirmed."
       );
     }
+
+    
+/*
+  META PIXEL — VERIFIED PURCHASE
+
+  The amount must come from the backend's
+  verified Paystack payment response.
+*/
+
+// Replace this property with the actual verified
+// KES amount field returned by your backend.
+const verifiedAmountKes = result.amountPaidKes;
+
+trackMetaPurchase(reference, verifiedAmountKes);
+
 
     const message =
       `Your payment has been verified! ` +

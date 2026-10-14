@@ -2,9 +2,9 @@
 <!DOCTYPE html>
 <html lang="en">
 
+
 <head>
   <meta charset="UTF-8">
-
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0"
@@ -28,10 +28,9 @@
   <meta name="color-scheme" content="light">
 
   <!-- CANONICAL URL -->
-  <!-- Replace with your actual domain before deployment -->
   <link
     rel="canonical"
-    href="https://YOUR-DOMAIN.com/"
+    href="https://hippohomes.co.ke/"
   >
 
   <!-- FAVICONS -->
@@ -64,21 +63,23 @@
 
   <meta
     property="og:url"
-    content="https://YOUR-DOMAIN.com/"
+    content="https://hippohomes.co.ke/"
   >
 
   <meta
     property="og:image"
-    content="https://YOUR-DOMAIN.com/og-image.jpg"
+    content="https://hippohomes.co.ke/images/img1.jpeg"
+  >
+
+  <meta
+    property="og:image:secure_url"
+    content="https://hippohomes.co.ke/images/img1.jpeg"
   >
 
   <meta
     property="og:image:alt"
     content="Hippo House Malindi riverside holiday accommodation"
   >
-
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
 
   <!-- TWITTER / X -->
   <meta name="twitter:card" content="summary_large_image">
@@ -95,7 +96,7 @@
 
   <meta
     name="twitter:image"
-    content="https://YOUR-DOMAIN.com/og-image.jpg"
+    content="https://hippohomes.co.ke/images/img1.jpeg"
   >
 
   <!-- GOOGLE STRUCTURED DATA -->
@@ -105,9 +106,9 @@
     "@type": "VacationRental",
     "name": "Hippo House Malindi",
     "description": "Private riverside holiday accommodation in Malindi, Kenya, offering a peaceful nature-inspired getaway.",
-    "url": "https://YOUR-DOMAIN.com/",
+    "url": "https://hippohomes.co.ke/",
     "image": [
-      "https://YOUR-DOMAIN.com/og-image.jpg"
+      "https://hippohomes.co.ke/images/img1.jpeg"
     ],
     "address": {
       "@type": "PostalAddress",
@@ -145,24 +146,34 @@
   <!-- JAVASCRIPT -->
   <script type="module" src="scripts/scripts.min.js"></script>
 
-  <!-- Meta Pixel Code -->
-<script>
-!function(f,b,e,v,n,t,s)
-{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-n.queue=[];t=b.createElement(e);t.async=!0;
-t.src=v;s=b.getElementsByTagName(e)[0];
-s.parentNode.insertBefore(t,s)}(window, document,'script',
-'https://connect.facebook.net/en_US/fbevents.js');
-fbq('init', '3110970102429798');
-fbq('track', 'PageView');
-</script>
-<noscript><img height="1" width="1" style="display:none"
-src="https://www.facebook.com/tr?id=3110970102429798&ev=PageView&noscript=1"
-/></noscript>
-<!-- End Meta Pixel Code -->
- 
+  <!-- META PIXEL -->
+  <script>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;
+  n.version='2.0';n.queue=[];
+  t=b.createElement(e);t.async=!0;t.src=v;
+  s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)
+  }(window,document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+
+  fbq('init', '3110970102429798');
+  fbq('track', 'PageView');
+  </script>
+
+  <noscript>
+    <img
+      height="1"
+      width="1"
+      style="display:none"
+      src="https://www.facebook.com/tr?id=3110970102429798&amp;ev=PageView&amp;noscript=1"
+      alt=""
+    >
+  </noscript>
+  <!-- END META PIXEL -->
+
 </head>
 
 
@@ -183,7 +194,7 @@ src="https://www.facebook.com/tr?id=3110970102429798&ev=PageView&noscript=1"
         <span class="brand-sub">MALINDI</span>
       </a>
 
-      <a href="book.html" class="nav-book-btn">
+      <a href="book.html" class="nav-book-btn" onclick="fbq('track', 'InitiateCheckout')">
         <span>Book Your Stay</span>
         <svg
           viewBox="0 0 24 24"
@@ -612,7 +623,7 @@ src="https://www.facebook.com/tr?id=3110970102429798&ev=PageView&noscript=1"
           quiet beauty of Hippo House Malindi.
         </p>
 
-        <a href="book.html" class="pricing-book-btn">
+        <a href="book.html" class="pricing-book-btn"  onclick="fbq('track', 'InitiateCheckout')">
           <span>BOOK YOUR STAY</span>
 
           <svg
@@ -963,7 +974,7 @@ src="https://www.facebook.com/tr?id=3110970102429798&ev=PageView&noscript=1"
         discovered in the heart of Malindi.
       </p>
 
-      <a href="book.html" class="booking-cta-button">
+      <a href="book.html" class="booking-cta-button"  onclick="fbq('track', 'InitiateCheckout')">
 
         <span>BOOK YOUR STAY</span>
 
@@ -1158,7 +1169,7 @@ src="https://www.facebook.com/tr?id=3110970102429798&ev=PageView&noscript=1"
             Availability
           </a>
 
-          <a href="book.html">
+          <a href="book.html"  onclick="fbq('track', 'InitiateCheckout')">
             Book Your Stay
           </a>
 

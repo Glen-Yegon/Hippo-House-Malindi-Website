@@ -1154,11 +1154,15 @@ async function verifyAndFinalize(reference) {
     );
   }
 
-  return {
-    success: true,
-    status: "confirmed",
-    reference
-  };
+
+return {
+  success: true,
+  status: "confirmed",
+  reference,
+  amountPaidKes: verified.amount / 100,
+  currency: "KES"
+};
+
 }
 
 /* =========================================

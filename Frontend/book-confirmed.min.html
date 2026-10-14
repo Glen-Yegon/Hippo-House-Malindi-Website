@@ -1,4 +1,78 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Booking Confirmation | Hippo House Malindi</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"><style>:root{--green:#09291e;--gold:#aa9256;--cream:#faf9f5;--muted:#68746d;--line:rgba(9, 41, 30, 0.14)}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:var(--cream);color:var(--green);font-family:Manrope,sans-serif;display:flex;flex-direction:column}.header{padding:28px 6%;border-bottom:1px solid var(--line);text-align:center}.brand{font-family:"Cormorant Garamond",serif;font-size:clamp(25px, 3vw, 34px);font-weight:600;color:var(--green);text-decoration:none}main{flex:1;display:flex;align-items:center;justify-content:center;padding:65px 20px}.confirmation{width:100%;max-width:620px;text-align:center}.symbol{width:86px;height:86px;border:1px solid var(--gold);border-radius:50%;margin:0 auto 32px;display:flex;align-items:center;justify-content:center;color:var(--green)}.symbol svg{width:36px;height:36px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.symbol.loading{border-color:var(--line)}.spinner{width:31px;height:31px;border:2px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.eyebrow{text-transform:uppercase;font-size:10px;font-weight:700;letter-spacing:3px;color:var(--gold);margin:0 0 18px}h1{font-family:"Cormorant Garamond",serif;font-size:clamp(48px, 7vw, 76px);line-height:.98;font-weight:500;letter-spacing:-1.5px;margin:0 0 25px}.description{font-size:14px;line-height:1.9;color:var(--muted);max-width:450px;margin:0 auto 36px}.reference{padding:22px 20px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:0 auto 38px;max-width:480px}.reference-label{display:block;color:var(--muted);font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}.reference-value{display:block;font-size:13px;font-weight:700;overflow-wrap:anywhere}.home-btn{display:inline-flex;justify-content:center;align-items:center;min-height:55px;min-width:210px;padding:16px 32px;background:var(--green);color:#fff;text-decoration:none;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;transition:background .2s}.home-btn:hover{background:#164634}.footer{text-align:center;border-top:1px solid var(--line);padding:23px 20px;font-size:10px;color:var(--muted);letter-spacing:1px}@media (max-width:600px){.header{padding:20px}main{padding:45px 22px}.symbol{width:74px;height:74px}.description{font-size:13px}.home-btn{width:100%}}</style></head><body><header class="header"><a href="index.html" class="brand">Hippo House Malindi</a></header><main><section class="confirmation" aria-live="polite"><div class="symbol loading" id="statusIcon"><div class="spinner"></div></div><p class="eyebrow" id="eyebrow">Reservation Status</p><h1 id="statusTitle">Verifying your payment</h1><p class="description" id="statusDescription">Please wait while we securely verify your transaction and confirm your reservation.</p><div class="reference" id="referenceBox" hidden><span class="reference-label">Booking Reference</span> <span class="reference-value" id="referenceValue"></span></div><a href="index.html" class="home-btn">Back to Home</a></section></main><footer class="footer">&copy; <span id="year"></span> Hippo House Malindi. All rights reserved.</footer><script>const API_BASE = "http://localhost:3000";
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Booking Confirmation | Hippo House Malindi</title><meta name="theme-color" content="#09291e"><script>!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;
+n.version='2.0';n.queue=[];
+t=b.createElement(e);t.async=!0;t.src=v;
+s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)
+}(window,document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+
+fbq('init', '3110970102429798');
+fbq('track', 'PageView');</script><noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=3110970102429798&amp;ev=PageView&amp;noscript=1" alt=""></noscript><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"><style>:root{--green:#09291e;--gold:#aa9256;--cream:#faf9f5;--muted:#68746d;--line:rgba(9, 41, 30, 0.14)}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:var(--cream);color:var(--green);font-family:Manrope,sans-serif;display:flex;flex-direction:column}.header{padding:28px 6%;border-bottom:1px solid var(--line);text-align:center}.brand{font-family:"Cormorant Garamond",serif;font-size:clamp(25px, 3vw, 34px);font-weight:600;color:var(--green);text-decoration:none}main{flex:1;display:flex;align-items:center;justify-content:center;padding:65px 20px}.confirmation{width:100%;max-width:620px;text-align:center}.symbol{width:86px;height:86px;border:1px solid var(--gold);border-radius:50%;margin:0 auto 32px;display:flex;align-items:center;justify-content:center;color:var(--green)}.symbol svg{width:36px;height:36px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.symbol.loading{border-color:var(--line)}.spinner{width:31px;height:31px;border:2px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.eyebrow{text-transform:uppercase;font-size:10px;font-weight:700;letter-spacing:3px;color:var(--gold);margin:0 0 18px}h1{font-family:"Cormorant Garamond",serif;font-size:clamp(48px, 7vw, 76px);line-height:.98;font-weight:500;letter-spacing:-1.5px;margin:0 0 25px}.description{font-size:14px;line-height:1.9;color:var(--muted);max-width:450px;margin:0 auto 36px}.reference{padding:22px 20px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:0 auto 38px;max-width:480px}.reference-label{display:block;color:var(--muted);font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}.reference-value{display:block;font-size:13px;font-weight:700;overflow-wrap:anywhere}.home-btn{display:inline-flex;justify-content:center;align-items:center;min-height:55px;min-width:210px;padding:16px 32px;background:var(--green);color:#fff;text-decoration:none;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;transition:background .2s}.home-btn:hover{background:#164634}.footer{text-align:center;border-top:1px solid var(--line);padding:23px 20px;font-size:10px;color:var(--muted);letter-spacing:1px}@media (max-width:600px){.header{padding:20px}main{padding:45px 22px}.symbol{width:74px;height:74px}.description{font-size:13px}.home-btn{width:100%}}</style></head><body><header class="header"><a href="index.html" class="brand">Hippo House Malindi</a></header><main><section class="confirmation" aria-live="polite"><div class="symbol loading" id="statusIcon"><div class="spinner"></div></div><p class="eyebrow" id="eyebrow">Reservation Status</p><h1 id="statusTitle">Verifying your payment</h1><p class="description" id="statusDescription">Please wait while we securely verify your transaction and confirm your reservation.</p><div class="reference" id="referenceBox" hidden><span class="reference-label">Booking Reference</span> <span class="reference-value" id="referenceValue"></span></div><a href="index.html" class="home-btn">Back to Home</a></section></main><footer class="footer">&copy; <span id="year"></span> Hippo House Malindi. All rights reserved.</footer><script>const API_BASE = "http://localhost:3000";
+
+    
+/* =========================================
+   META PIXEL — VERIFIED PURCHASE
+========================================= */
+
+function trackMetaPurchase(payment) {
+  if (
+    payment?.success !== true ||
+    payment.status !== "confirmed" ||
+    payment.currency !== "KES"
+  ) {
+    return;
+  }
+
+  const reference = String(payment.reference || "");
+  const amount = Number(payment.amountPaidKes);
+
+  if (
+    !reference ||
+    !Number.isFinite(amount) ||
+    amount <= 0
+  ) {
+    return;
+  }
+
+  const storageKey = `meta_purchase_${reference}`;
+
+  // Prevent repeated tracking when the user refreshes.
+  try {
+    if (localStorage.getItem(storageKey) === "sent") {
+      return;
+    }
+  } catch (error) {
+    console.warn("Meta tracking storage unavailable:", error);
+  }
+
+  if (typeof window.fbq !== "function") {
+    console.warn("Meta Pixel is not available.");
+    return;
+  }
+
+  window.fbq("track", "Purchase", {
+    value: amount,
+    currency: "KES"
+  }, {
+    eventID: `purchase_${reference}`
+  });
+
+  try {
+    localStorage.setItem(storageKey, "sent");
+  } catch (error) {
+    console.warn("Could not save Meta tracking state:", error);
+  }
+
+  console.info("Meta Purchase event triggered:", {
+    reference,
+    amount,
+    currency: "KES"
+  });
+}
+
 
     const icons = {
       success: `
@@ -88,15 +162,22 @@
             data.payment?.status === "confirmed" ||
             data.reservation?.status === "confirmed"
           );
+          
 
-        if (confirmed) {
-          showStatus(
-            "success",
-            "Your stay is confirmed.",
-            "Your payment has been verified and your reservation is confirmed. We look forward to welcoming you to Hippo House Malindi."
-          );
-          return;
-        }
+if (confirmed) {
+  // Display the successful booking confirmation.
+  showStatus(
+    "success",
+    "Your stay is confirmed.",
+    "Your payment has been verified and your reservation is confirmed. We look forward to welcoming you to Hippo House Malindi."
+  );
+
+  // META PIXEL — TRACK ACTUAL VERIFIED PAYMENT
+  trackMetaPurchase(data);
+
+  return;
+}
+
 
         const failed =
           data.status === "failed" ||
