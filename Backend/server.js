@@ -64,8 +64,23 @@ const MONTH_SEASONS = {
   12: "high"
 };
 
+const allowedOrigins = [
+  "https://www.hippohomes.co.ke",
+  "https://hippohomes.co.ke",
+  "http://localhost:5500",
+  "http://127.0.0.1:5500"
+];
+
 app.use(cors({
-  origin: FRONTEND_URL
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked origin: ${origin}`));
+  },
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
 // Preserve the original body for Paystack webhook signatures.
