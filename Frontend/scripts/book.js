@@ -1003,7 +1003,7 @@ elements.continueDetails.addEventListener("click", () => {
    PAYSTACK PAYMENT INTEGRATION
 ========================================= */
 
-const API_BASE = "http://localhost:3000";
+const API_BASE = "https://hippo-house-malindi-website.onrender.com";
 
 let paymentInProgress = false;
 
